@@ -22,9 +22,9 @@ IMPLICIT Rules
 3) Calculate SS for selected driver:
     1) Driver number of vowels, drivers consonants,  factors
     2) Shipments length, even, odd, factors
-    3)  if streetname.length == even  ss = driver.vowelNum*1.5 else ss= driver.constNum * 1
+    3)  if streetName.length == even  ss = driver.vowelNum*1.5 else ss= driver.constNum * 1
     4)  if shareCommonFactor() ss = ss * 1.5 Note this never out weighs putting even streets with
-    max vowel names.
+    max vowel names, so brittle optimization possible.
 4) Assign all the drivers to streets such that the sum of SS is maximized.
 
 Brute force for each driver, calculate SS for each destination value.
@@ -51,10 +51,10 @@ With the level of effort required to call 'y' a vowel in "Sly" and a consonant i
  */
 
 /* All sets of chars to test against are REQUIRED to be lowercase */
-val vowelsSet = setOf<Char>('a', 'e', 'i', 'o', 'u')
+val vowelsSet = setOf('a', 'e', 'i', 'o', 'u')
 
 /* Explicit check because (consonants == name.length - vowelCount) is too error prone given all the non letters.*/
-val consonantsSet = setOf<Char>(
+val consonantsSet = setOf(
     'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q',
     'r', 's', 't', 'v', 'x', 'y', 'z'
 )
@@ -81,33 +81,34 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
 
    But before it is worth spending any time on *brittle* optimizations like that some question need to be
    answered by asking the product requirement owners and testing and analysing:
+
     First: Is there a problem that optimization solves? On the datasets we anticipate does analysis or
-    stress testing show and issue? Are there latency issues for users? Costs for network, server
-    time/storage, wear on the device flash (which does wear out fast if you read and write)?
+    stress testing show an issue? Are there latency issues for users? Costs for network, server
+    time/storage, wear on the device flash (which does wear out if you read and write all the time)?
     Are there battery consumption issues, or overheating?
-    If not what are we optimizing? Are we scared of wearing out the CPU?
+    If not what are we optimizing? Are we scared of wearing out the CPU? :)
 
     If there is a need to optimize:
-    1) Ask product owners and understand completely what is the real world problem we are trying
-    to solve? Is there another way to do it with rules that are less combinatorially expensive.
+    1) Ask product owners and understand  what is the real world problem we are trying
+    to solve? Is there another way to do it with rules that are less combinatorially expensive?
     2) Are theses rules stable? Or do the rules and values change?  If so, how often, and is it worth
     the effort required?
     3) Are there generic optimizations that work? Trade off larger big (O) space for a lower big (0) computation
-     speed.
+     speed, Memoization, etc. Other?
     4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
     This is how the Traveling Salesman problem is "solved" in practice.
  */
 fun maxSsDriverDestinationSet(
     drivers: Set<String>,
     destinations: Set<String>
-): MutableMap<Pair<String, String>, Float> {
+): MutableMap<String, String> {
     var maxSS = 0f
-    var currentSS = 0f
+    var currentSS: Float
     var ssSetSum = 0f
-    var maxSSDriverAddressTable: MutableMap<Pair<String, String>, Float> =
-        HashMap<Pair<String, String>, Float>().toMutableMap()
-    var map: MutableMap<Pair<String, String>, Float> =
-        HashMap<Pair<String, String>, Float>().toMutableMap()
+    var maxSSDriverAddressTable: MutableMap<String, String> =
+        HashMap<String, String>().toMutableMap()
+    val map: MutableMap<String, String> =
+        HashMap<String, String>().toMutableMap()
     drivers.flatMap { driver ->
         if (ssSetSum > maxSS) {
             maxSS = ssSetSum
@@ -116,9 +117,8 @@ fun maxSsDriverDestinationSet(
         map.clear()
         ssSetSum = 0f
         destinations.map { destination ->
-            val key = driver to destination
             currentSS = calcDriverDestinationSS(driver, destination)
-            map[key] = currentSS
+            map[driver] = destination
             ssSetSum += currentSS
         }
     }
@@ -129,7 +129,7 @@ fun maxSsDriverDestinationSet(
 suggested for this exercise. Luckily the data set presented *seems* support simply taking the first
 two words of in each address. And thus avoiding the potholes of "Stravenue",*/
 fun parseStreetNameFromAddress(address: String): Result<String> {
-    try {
+    return try {
         val addressElements = address.split(" ")
         /*
              Destination addresses in the given set follow the format:
@@ -137,11 +137,12 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
              For example
              "63187 Volkman Garden Suite 447",
          */
-        return Result.success("$addressElements[1] $addressElements[2]")
+        val streetName = "${addressElements[1]} ${addressElements[2]}"
+        Result.success(streetName)
 
     } catch (e: Exception) {
         // General catch but just passing whatever didn't allow a valid result, by my assumed rules.
-        return Result.failure(e)
+        Result.failure(e)
     }
 }
 
@@ -153,8 +154,8 @@ class DriverProcessed(driverIn: String) {
     val factors2: Set<Int> = findFactorsGreaterThanOne(driver.length)
 }
 
-/* Long explicit for this case because the algorithm is so quirky and specific.
-
+/*
+Long explicit variable names throughout because the algorithm is so quirky and specific.
 */
 class AddressProcessed(fullAddressIn: String, streetNameIn: String) {
     val fullAddress = fullAddressIn
@@ -177,20 +178,19 @@ fun calcDriverDestinationSS(
     else
         throw streetNameResult.exceptionOrNull()!!
     val address = AddressProcessed(addressString, streetName)
-    var ss: Float = 0f
-    ss = if (address.evenStreetName) {
+    var ss: Float = if (address.evenStreetName) {
         driver.vowels * vowelFactor
     } else {
         driver.consonant * consonantFactor
     }
-    if (!driver.factors2.intersect(address.factors2).isEmpty())
+    if (driver.factors2.intersect(address.factors2).isNotEmpty())
         ss += ss * commonFactorsFactor
     return ss
 }
 
 fun findFactorsGreaterThanOne(num: Int): Set<Int> {
     val factors = mutableSetOf<Int>()
-    for (i in 2..num) {
+    for (i in 2 until num) {
         if (num % i == 0) {
             factors.add(i)
         }
