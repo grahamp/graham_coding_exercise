@@ -26,8 +26,9 @@ IMPLICIT Rules
     4)  if shareCommonFactor() ss = ss * 1.5 Note this never out weighs putting even streets with
     max vowel names.
 4) Assign all the drivers to streets such that the sum of SS is maximized.
+
 Brute force for each driver, calculate SS for each destination value.
-Brute force big O = n!+n! for common factors.
+Brute force big O = 2^n for common factors.
 
 BUT the drivers with the most vowels are guaranteed to produce the greater or equal values to any
 other driver when matched
@@ -69,8 +70,32 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
 }
 
 /*
-   This has a big O of 2^n which in general is not acceptable,
+   Brute force answer, that works for < 20 element data set.
+
+   This has a big (O) of 2^n which in general is not acceptable,
    but could be okay for data sets < 20 elements (2 ^ 20 = about 1 million)
+
+   NOTE: The rules seem to enable some significant optimizations. For example I think all even
+   streets can be safely matched with the drivers with the greatest number of vowels, but only given
+   the multipliers provided 1.5, 1.0, 1.5.
+
+   But before it is worth spending any time on *brittle* optimizations like that some question need to be
+   answered by asking the product requirement owners and testing and analysing:
+    First: Is there a problem that optimization solves? On the datasets we anticipate does analysis or
+    stress testing show and issue? Are there latency issues for users? Costs for network, server
+    time/storage, wear on the device flash (which does wear out fast if you read and write)?
+    Are there battery consumption issues, or overheating?
+    If not what are we optimizing? Are we scared of wearing out the CPU?
+
+    If there is a need to optimize:
+    1) Ask product owners and understand completely what is the real world problem we are trying
+    to solve? Is there another way to do it with rules that are less combinatorially expensive.
+    2) Are theses rules stable? Or do the rules and values change?  If so, how often, and is it worth
+    the effort required?
+    3) Are there generic optimizations that work? Trade off larger big (O) space for a lower big (0) computation
+     speed.
+    4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
+    This is how the Traveling Salesman problem is "solved" in practice.
  */
 fun maxSsDriverDestinationSet(
     drivers: Set<String>,
@@ -98,23 +123,6 @@ fun maxSsDriverDestinationSet(
         }
     }
     return maxSSDriverAddressTable
-}
-
-/*
-   This has a big O of 2^n which in general is not acceptable,
-   but could be okay for data sets < 20 elements (2 ^ 20 = about 1 million)
- */
-fun combinations(
-    set1: Set<String>,
-    set2: Set<String>
-): List<Pair<String, String>> {
-    val combinations = set1.flatMap { s1i ->
-        set2.map { s2i ->
-            s1i to s2i
-        }
-    }
-
-    return combinations
 }
 
 /* Parsing  street names out arbitrary address reliably is beyond the scope of level of effort
