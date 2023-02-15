@@ -1,5 +1,7 @@
 package com.grahampoor.ps.rules
 
+import android.util.Log
+
 /*
 
 The top-secret algorithm is:
@@ -101,27 +103,40 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
 fun maxSsDriverDestinationSet(
     drivers: Set<String>,
     destinations: Set<String>
-): MutableMap<String, String> {
+): MutableMap<String, Float> {
+    var countIterations = 0
+    var countCalulation =0
     var maxSS = 0f
     var currentSS: Float
     var ssSetSum = 0f
-    var maxSSDriverAddressTable: MutableMap<String, String> =
-        HashMap<String, String>().toMutableMap()
-    val map: MutableMap<String, String> =
-        HashMap<String, String>().toMutableMap()
+    var maxSSDriverAddressTable: MutableMap<String, Float> =
+        HashMap<String, Float>().toMutableMap()
+    val driverAddressToSSScoreMap: MutableMap<String, Float> =
+        HashMap<String, Float>().toMutableMap()
     drivers.flatMap { driver ->
-        if (ssSetSum > maxSS) {
-            maxSS = ssSetSum
-            maxSSDriverAddressTable = map
-        }
-        map.clear()
+        Log.d("ProcessData","Score $ssSetSum interactions=$countIterations calculations=$countCalulation")
+        countIterations += 1
         ssSetSum = 0f
+        driverAddressToSSScoreMap.clear()
         destinations.map { destination ->
-            currentSS = calcDriverDestinationSS(driver, destination)
-            map[driver] = destination
+            if (ssSetSum > maxSS) {
+                maxSS = ssSetSum
+                ssSetSum = 0f
+                maxSSDriverAddressTable = driverAddressToSSScoreMap
+                driverAddressToSSScoreMap.clear()
+            }
+            val key = "$driver -> $destination\n"
+            currentSS =  if (!driverAddressToSSScoreMap.containsKey(key)){
+               countCalulation+=1
+               calcDriverDestinationSS(driver, destination)
+            } else {
+                driverAddressToSSScoreMap.get(key)!!
+            }
+            driverAddressToSSScoreMap[key] = currentSS
             ssSetSum += currentSS
         }
     }
+    Log.d("ProcessData","interations=$countIterations calculations=$countCalulation")
     return maxSSDriverAddressTable
 }
 
@@ -142,7 +157,7 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
 
     } catch (e: Exception) {
         // General catch but just passing whatever didn't allow a valid result, by my assumed rules.
-        Result.failure(e)
+        Result.failure(Exception("Failed to parse street name from $address because ${e.message}",e))
     }
 }
 
