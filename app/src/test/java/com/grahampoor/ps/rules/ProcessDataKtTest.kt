@@ -45,59 +45,11 @@ class ProcessDataKtTest {
     fun maxSsDriverDestinationSetTest() {
 
         val optimalRoutes = maxSsDriverDestinationSet(
-            drivers= drivers,
-            shipments = shipments)
+            drivers= drivers.toTypedArray(),
+            shipments = shipments.toTypedArray())
         assertEquals( drivers.size, optimalRoutes.size)
     }
 
-    @Test
-    fun combinationsSetTest2() {
-
-        val routes = allCombos(
-            drivers.toTypedArray(),
-            shipments.toTypedArray())
-        assertEquals( drivers.size*shipments.size, routes.size)
-    }
-
-    fun <T> allCombinations(set1: Set<T>, set2: Set<T>): Set<Set<T>> {
-        if (set1.isEmpty()) {
-            return setOf(emptySet())
-        }
-        val combinations = mutableSetOf<Set<T>>()
-        for (element in set2) {
-            val remaining = set2.filter { it != element }.toSet()
-            for (subCombination in allCombinations(set1 - element, remaining)) {
-                combinations.add(subCombination + element)
-            }
-        }
-        return combinations
-    }
-
-
-    @Test
-    fun main() {
-        val numbers = setOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-        val letters = setOf('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j')
-        var combinations :  MutableSet<Set<Any>> = mutableSetOf<Set<Any>>()
-
-        combinations = allCombinations2(numbers, letters,combinations)
-        for (combination in combinations) {
-            println(combination)
-        }
-    }
-
-    fun allCombinations2(set1: Set<Int>, set2: Set<Char>, combinations: MutableSet<Set<Any>>): MutableSet<Set<Any>> {
-        if (set1.isEmpty()) {
-            return combinations
-        }
-        for (element in set2) {
-            val remaining = set2.filter { it != element }.toSet()
-            for (subCombination in allCombinations2(set1, remaining, combinations)) {
-                combinations.add(subCombination + element)
-            }
-        }
-        return combinations
-    }
 
     @Test
     fun getVowelsSet() {

@@ -50,6 +50,8 @@ to code for the author, Graham Poor, and code reviewer.
 Given that I don't understand the reasoning for these rules.
 The decision is taken that 'y' is not a vowel, would communicate this to the person responsible for rules.
 With the level of effort required to call 'y' a vowel in "Sly" and a consonant in "Yuri".
+This also will fail with non-Roman alphabets, so to Product owner about the issues with
+this rule and names in other languages, etc.
  */
 
 /* All sets of chars to test against are REQUIRED to be lowercase */
@@ -74,7 +76,7 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
 /*
    Brute force answer,
    This has a big (O) of n^2 which in general is not acceptable,
-   but could be okay if data sets are small.
+   but could be okay if data sets are small, under 1000 should be okay.
 
    NOTE: The rules seem to enable some significant optimizations. For example I think all even
    streets can be safely matched with the drivers with the greatest number of vowels, but only given
@@ -105,35 +107,39 @@ fun  maxSsDriverDestinationSet(  drivers: Array<String>,
      But shows I know about "Memoization". We could also store the final result,
      maybe even storing it and tracking a change in data set.
 
-     But before making storage speed tradoffs, or doing any work on optimization we have
+     But before making storage speed tradeoffs, or doing any work on optimization we have
      first identify the problem and confirm many questions I outlined in other comments.
      */
-    val driverRouteToScoreLookUp:  MutableMap<String,Float> = HashMap<String,Float>()
-    HashMap<String, Float>().toMutableMap()
-    var countIterations = 0
-    var countCalculation = 0
+    val driverRouteToScoreLookUp:  MutableMap<String,Float> = HashMap<String, Float>().toMutableMap()
+
     var maxSS = 0f
     var currentSS: Float
-    var ssSetSum = 0f
+    var ssSum = 0f
     var maxSSDriverRouteTable: MutableMap<String, String> =
         HashMap<String, String>().toMutableMap()
     val candidateRouteTable: MutableMap<String, String> =
         HashMap<String, String>().toMutableMap()
 
-    for (j in shipments.indices) {
+    for (shippingIndexOffset in shipments.indices) {
+        /*
+         We get all the combinations by matching driver at index i with shipment
+         i+shippingIndexOffset mod list.size.  We progress through the combination in a way incremental
+         way that creates a full valid candidate routing table at each iteration of the outer loop.
+         This lets us test whether this is the Max SS route that we copy and save or not in
+         which case we do not have to store it.
+        */
         Log.d(
             "ProcessData",
-            " $j) shipments ${shipments[j]}  start")
-        if (ssSetSum > maxSS) {
-            maxSS = ssSetSum
+            " $shippingIndexOffset) shipments ${shipments[shippingIndexOffset]}  start")
+        if (ssSum > maxSS) {
+            maxSS = ssSum
             maxSSDriverRouteTable = candidateRouteTable.toMutableMap()
         }
-        ssSetSum = 0f
+        ssSum = 0f
         candidateRouteTable.clear()
 
         for (i in drivers.indices) {
-            countIterations += 1
-            var shipmentIndex = (i + j) % drivers.size
+            val shipmentIndex: Int = (i + shippingIndexOffset) % drivers.size
             val driver = drivers[i]
             val shipment = shipments[shipmentIndex]
             val key = "$driver -> $shipment"
@@ -144,25 +150,27 @@ fun  maxSsDriverDestinationSet(  drivers: Array<String>,
                 driverRouteToScoreLookUp.get(key)!!
             }
             driverRouteToScoreLookUp[key] = currentSS
-            ssSetSum += currentSS
+            ssSum += currentSS
         }
         Log.d(
             "ProcessData",
-            " $j) shipment ${shipments[j]} end \n start Score $ssSetSum interations=$countIterations calculations=$countCalculation"
+            " $shippingIndexOffset) shipment ${shipments[shippingIndexOffset]} end \n start Score $ssSum "
         )
     }
     return maxSSDriverRouteTable
 }
 
-/* Parsing  street names out arbitrary address reliably is beyond the scope of level of effort
+/* Parsing  street names out in a simplistic and brittle way, not acceptable for production .
+ Parsing arbitrary addresses reliably is beyond the scope of level of effort
 suggested for this exercise. Luckily the data set presented *seems* support simply taking the first
 two words of in each address. And thus avoiding the potholes of "Stravenue",*/
 fun parseStreetNameFromAddress(address: String): Result<String> {
     return try {
         val addressElements = address.split(" ")
         /*
-             Destination addresses in the given set follow the format:
-             <StreetNumber>" "<StreetNamePart1>" "<StreetNamePart2>" "<Other>
+             Destination addresses in the given set follow the format that allows
+             BNF parsing generalization:
+             shipment =: <StreetNumber>" "<StreetNamePart1>" "<StreetNamePart2>" "<Other>
              For example
              "63187 Volkman Garden Suite 447",
          */
