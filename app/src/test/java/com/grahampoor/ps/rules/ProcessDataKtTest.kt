@@ -49,60 +49,7 @@ class ProcessDataKtTest {
             shipments = shipments)
         assertEquals( drivers.size, optimalRoutes.size)
     }
-    fun  allCombos(  drivers: Array<String>,
-                     shipments: Array<String>): MutableMap<String, String> {
-       /* A potential optimization... maybe not worth it because the calculation is that bad.
-        But shows I know about "Memoization". We could also store each complete "route-set" with it's value. But before making
-        storage speed tradoffs, or doing any work on optimization we have first identify the problem and confirm many questions I
-        outlined in other comments.
-        */
-        val driverRouteToScoreLookUp:  MutableMap<String,Float> = HashMap<String,Float>()
-        HashMap<String, Float>().toMutableMap()
-        var countIterations = 0
-        var countCalulation = 0
-        var maxSS = 0f
-        var currentSS: Float
-        var ssSetSum = 0f
-        var maxSSDriverRouteTable: MutableMap<String, String> =
-            HashMap<String, String>().toMutableMap()
-        val candidateRouteTable: MutableMap<String, String> =
-            HashMap<String, String>().toMutableMap()
-        for (i in drivers.indices) {
-            Log.d(
-                "ProcessData",
-                " $i) Driver ${drivers[i]}  start")
 
-            for (j in shipments.indices) {
-                if (ssSetSum > maxSS) {
-                    maxSS = ssSetSum
-                    maxSSDriverRouteTable = candidateRouteTable.toMutableMap()
-                }
-                ssSetSum = 0f
-                candidateRouteTable.clear()
-
-                for (i in drivers.indices) {
-                    countIterations += 1
-                    var shipmentIndex = (i + j) % drivers.size
-                    val driver = drivers[i]
-                    val shipment = shipments[shipmentIndex]
-                    val key = "$driver -> $shipment"
-                    candidateRouteTable[driver]=shipment
-                    currentSS = if (!driverRouteToScoreLookUp.containsKey(key)) {
-                        calcDriverDestinationSS(driver, shipment)
-                    } else {
-                        driverRouteToScoreLookUp.get(key)!!
-                    }
-                    driverRouteToScoreLookUp[key] = currentSS
-                    ssSetSum += currentSS
-                }
-            }
-            Log.d(
-                "ProcessData",
-                " $i) Driver ${drivers[i]} end \n start Score $ssSetSum interations=$countIterations calculations=$countCalulation"
-            )
-        } //for each driver
-        return maxSSDriverRouteTable
-    }
     @Test
     fun combinationsSetTest2() {
 

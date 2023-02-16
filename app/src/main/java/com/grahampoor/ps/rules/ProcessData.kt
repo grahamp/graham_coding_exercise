@@ -99,50 +99,59 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
     4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
     This is how the Traveling Salesman problem is "solved" in practice.
  */
-fun maxSsDriverDestinationSet(
-    drivers: Set<String>,
-    shipments: Set<String>
-): MutableMap<String, Float> {
+fun  maxSsDriverDestinationSet(  drivers: Array<String>,
+                 shipments: Array<String>): MutableMap<String, String> {
+    /* A potential optimization... maybe not worth it because the calculation is not that bad.
+     But shows I know about "Memoization". We could also store the final result,
+     maybe even storing it and tracking a change in data set.
+
+     But before making storage speed tradoffs, or doing any work on optimization we have
+     first identify the problem and confirm many questions I outlined in other comments.
+     */
+    val driverRouteToScoreLookUp:  MutableMap<String,Float> = HashMap<String,Float>()
+    HashMap<String, Float>().toMutableMap()
     var countIterations = 0
-    var countCalulation = 0
+    var countCalculation = 0
     var maxSS = 0f
     var currentSS: Float
     var ssSetSum = 0f
-    var maxSSDriverAddressTable: MutableMap<String, Float> =
-        HashMap<String, Float>().toMutableMap()
-    val driverAddressToSSScoreMap: MutableMap<String, Float> =
-        HashMap<String, Float>().toMutableMap()
-        for (i in 1 .. shipments.size) {
-            Log.d(
-                "ProcessData",
-                "Score $ssSetSum interations=$countIterations calculations=$countCalulation"
-            )
-            countIterations += 1
-            driverAddressToSSScoreMap.clear()
-            if (ssSetSum > maxSS) {
-                maxSS = ssSetSum
-                ssSetSum = 0f
-                maxSSDriverAddressTable = driverAddressToSSScoreMap
-                driverAddressToSSScoreMap.clear()
-            }
-            ssSetSum = 0f
-            drivers.map { driver ->
-                shipments.map { destination ->
-                    val key = "$driver -> $destination\n"
-                    currentSS = if (!driverAddressToSSScoreMap.containsKey(key)) {
-                        countCalulation += 1
-                        calcDriverDestinationSS(driver, destination)
-                    } else {
-                        driverAddressToSSScoreMap.get(key)!!
-                    }
-                    driverAddressToSSScoreMap[key] = currentSS
-                    ssSetSum += currentSS
-                }
+    var maxSSDriverRouteTable: MutableMap<String, String> =
+        HashMap<String, String>().toMutableMap()
+    val candidateRouteTable: MutableMap<String, String> =
+        HashMap<String, String>().toMutableMap()
 
-            }
+    for (j in shipments.indices) {
+        Log.d(
+            "ProcessData",
+            " $j) shipments ${shipments[j]}  start")
+        if (ssSetSum > maxSS) {
+            maxSS = ssSetSum
+            maxSSDriverRouteTable = candidateRouteTable.toMutableMap()
         }
-    Log.d("ProcessData", "interations=$countIterations calculations=$countCalulation")
-    return maxSSDriverAddressTable
+        ssSetSum = 0f
+        candidateRouteTable.clear()
+
+        for (i in drivers.indices) {
+            countIterations += 1
+            var shipmentIndex = (i + j) % drivers.size
+            val driver = drivers[i]
+            val shipment = shipments[shipmentIndex]
+            val key = "$driver -> $shipment"
+            candidateRouteTable[driver]=shipment
+            currentSS = if (!driverRouteToScoreLookUp.containsKey(key)) {
+                calcDriverDestinationSS(driver, shipment)
+            } else {
+                driverRouteToScoreLookUp.get(key)!!
+            }
+            driverRouteToScoreLookUp[key] = currentSS
+            ssSetSum += currentSS
+        }
+        Log.d(
+            "ProcessData",
+            " $j) shipment ${shipments[j]} end \n start Score $ssSetSum interations=$countIterations calculations=$countCalculation"
+        )
+    }
+    return maxSSDriverRouteTable
 }
 
 /* Parsing  street names out arbitrary address reliably is beyond the scope of level of effort
