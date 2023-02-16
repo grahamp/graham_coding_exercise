@@ -72,10 +72,9 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
 }
 
 /*
-   Brute force answer, that works for < 20 element data set.
-
-   This has a big (O) of 2^n which in general is not acceptable,
-   but could be okay for data sets < 20 elements (2 ^ 20 = about 1 million)
+   Brute force answer,
+   This has a big (O) of n^2 which in general is not acceptable,
+   but could be okay if data sets are small.
 
    NOTE: The rules seem to enable some significant optimizations. For example I think all even
    streets can be safely matched with the drivers with the greatest number of vowels, but only given
@@ -102,10 +101,10 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
  */
 fun maxSsDriverDestinationSet(
     drivers: Set<String>,
-    destinations: Set<String>
+    shipments: Set<String>
 ): MutableMap<String, Float> {
     var countIterations = 0
-    var countCalulation =0
+    var countCalulation = 0
     var maxSS = 0f
     var currentSS: Float
     var ssSetSum = 0f
@@ -113,30 +112,36 @@ fun maxSsDriverDestinationSet(
         HashMap<String, Float>().toMutableMap()
     val driverAddressToSSScoreMap: MutableMap<String, Float> =
         HashMap<String, Float>().toMutableMap()
-    drivers.flatMap { driver ->
-        Log.d("ProcessData","Score $ssSetSum interactions=$countIterations calculations=$countCalulation")
-        countIterations += 1
-        ssSetSum = 0f
-        driverAddressToSSScoreMap.clear()
-        destinations.map { destination ->
+        for (i in 1 .. shipments.size) {
+            Log.d(
+                "ProcessData",
+                "Score $ssSetSum interations=$countIterations calculations=$countCalulation"
+            )
+            countIterations += 1
+            driverAddressToSSScoreMap.clear()
             if (ssSetSum > maxSS) {
                 maxSS = ssSetSum
                 ssSetSum = 0f
                 maxSSDriverAddressTable = driverAddressToSSScoreMap
                 driverAddressToSSScoreMap.clear()
             }
-            val key = "$driver -> $destination\n"
-            currentSS =  if (!driverAddressToSSScoreMap.containsKey(key)){
-               countCalulation+=1
-               calcDriverDestinationSS(driver, destination)
-            } else {
-                driverAddressToSSScoreMap.get(key)!!
+            ssSetSum = 0f
+            drivers.map { driver ->
+                shipments.map { destination ->
+                    val key = "$driver -> $destination\n"
+                    currentSS = if (!driverAddressToSSScoreMap.containsKey(key)) {
+                        countCalulation += 1
+                        calcDriverDestinationSS(driver, destination)
+                    } else {
+                        driverAddressToSSScoreMap.get(key)!!
+                    }
+                    driverAddressToSSScoreMap[key] = currentSS
+                    ssSetSum += currentSS
+                }
+
             }
-            driverAddressToSSScoreMap[key] = currentSS
-            ssSetSum += currentSS
         }
-    }
-    Log.d("ProcessData","interations=$countIterations calculations=$countCalulation")
+    Log.d("ProcessData", "interations=$countIterations calculations=$countCalulation")
     return maxSSDriverAddressTable
 }
 
@@ -157,7 +162,12 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
 
     } catch (e: Exception) {
         // General catch but just passing whatever didn't allow a valid result, by my assumed rules.
-        Result.failure(Exception("Failed to parse street name from $address because ${e.message}",e))
+        Result.failure(
+            Exception(
+                "Failed to parse street name from $address because ${e.message}",
+                e
+            )
+        )
     }
 }
 
