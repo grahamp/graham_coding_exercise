@@ -1,14 +1,15 @@
 package com.grahampoor.ps.rules
 
-import android.util.Log
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 
 import org.junit.Test
+import javax.sql.DataSource
 
 class ProcessDataKtTest {
-    val drivers = setOf<String>(
+
+    val drivers= arrayListOf<String>(
 
         "Noemie Murphy",
         "Cleve Durgan",
@@ -21,7 +22,7 @@ class ProcessDataKtTest {
         "Ellis Wisozk",
         "Kaiser Sose"
     )
-    val shipments = setOf<String>(
+    val shipments= arrayListOf<String>(
         "215 Osinski Manors",
         "9856 Marvin Stravenue",
         "7127 Kathlyn Ferry",
@@ -45,8 +46,8 @@ class ProcessDataKtTest {
     fun maxSsDriverDestinationSetTest() {
 
         val optimalRoutes = maxSsDriverDestinationSet(
-            drivers= drivers.toTypedArray(),
-            shipments = shipments.toTypedArray())
+            drivers= drivers.subList(0,10).toTypedArray(),
+            shipments = shipments.subList(0,10).toTypedArray())
         assertEquals( drivers.size, optimalRoutes.size)
     }
 
@@ -54,7 +55,57 @@ class ProcessDataKtTest {
     @Test
     fun getVowelsSet() {
     }
+    fun permuteRecur(
+        input: List<Int>,
+        used: List<Boolean>,
+        output: MutableList<Int>
+    ) {
+        if (output.size == input.size) {
+            println(output.joinToString(""))
+            return
+        }
+        for (i in input.indices) {
+            if (!used[i]) {
+                output.add(input[i])
+                val newUsed = used.toMutableList()
+                newUsed[i] = true
+                permuteRecur(input, newUsed, output)
+                output.removeLast()
+            }
+        }
+    }
+    fun generatePermutations(n: Int): List<String> {
+        val digits = (0..n).toList()
+        val permutations = mutableListOf<String>()
+        val stack = mutableListOf(mutableListOf<Int>())
+        while (stack.isNotEmpty()) {
+            val current = stack.removeLast()
+            if (current.size == n) {
+                permutations.add(current.joinToString(""))
+            } else {
+                for (digit in digits) {
+                    if (!current.contains(digit)) {
+                        val newCurrent = current.toMutableList()
+                        newCurrent.add(digit)
+                        stack.add(newCurrent)
+                    }
+                }
+            }
+        }
+        return permutations
+    }
 
+    @Test
+    fun permuteRecurTest() {
+        val input = (0..8).toList()
+        val used = List(input.size) { false }
+        val output = mutableListOf<Int>()
+        permuteRecur(input, used, output)
+    }
+    @Test
+    fun permuteIterTest() {
+        generatePermutations(8)
+    }
     @Test
     fun parseStreetNameFromAddress() {
         val streetNameResult = parseStreetNameFromAddress(  "63187 Volkman Garden Suite 447",)

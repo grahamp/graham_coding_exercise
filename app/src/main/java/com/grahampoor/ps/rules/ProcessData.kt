@@ -1,6 +1,8 @@
 package com.grahampoor.ps.rules
 
-import android.util.Log
+import androidx.lifecycle.MutableLiveData
+import com.grahampoor.ps.repository.DriversShipments
+import com.grahampoor.ps.repository.readResourceFile
 
 /*
 
@@ -54,6 +56,7 @@ This also will fail with non-Roman alphabets, so to Product owner about the issu
 this rule and names in other languages, etc.
  */
 
+
 /* All sets of chars to test against are REQUIRED to be lowercase */
 val vowelsSet = setOf('a', 'e', 'i', 'o', 'u')
 
@@ -62,6 +65,52 @@ val consonantsSet = setOf(
     'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q',
     'r', 's', 't', 'v', 'x', 'y', 'z'
 )
+/* maxSSDriverRouteTable contains our result.
+Other values are for Unit testing sanity, to verify we tested all unique drivers to route
+sets.
+Could do some clever DI to remove from product.
+ */
+data class MaxSsDriverDestinationValues(
+    val maxSSDriverRouteTable: MutableMap<String, String>,
+    val driverRouteToScoreLookUp: MutableMap<String, Float>,
+    val iterationCount: Int,
+    val maxSS: Float
+)
+
+class ProcessDataByRules {
+
+    private val driversShipments: DriversShipments = readResourceFile()
+    val drivers = MutableLiveData<List<String>>(driversShipments.drivers)
+    public val optimalRoutes = maxSsDriverDestinationSet(
+        driversShipments.drivers.toTypedArray(),
+        driversShipments.shipments.toTypedArray()
+    ).maxSSDriverRouteTable
+
+    // TODO Don't think this should hold a users state from a GUI selection.
+    val selectedRoute = MutableLiveData<String>("No Route No Driver Selected")
+
+
+} // end processDataByRules
+
+//fun generatePermutations(n: Int): List<Array<Int>> {
+//    val digits = (0..n).toList()
+//    val permutations = mutableListOf<Array<Int>>()
+//    val stack = mutableListOf(mutableListOf<Int>())
+//    while (stack.isNotEmpty()) {
+//        val current = stack.removeLast()
+//        if (current.size != n) {
+//            for (digit in digits) {
+//                if (!current.contains(digit)) {
+//                    val newCurrent = current.toMutableList()
+//                    newCurrent.add(digit)
+//                    stack.add(newCurrent)
+//                }
+//            }
+//        }
+//        var shipments = current.toTypedArray()
+//    }
+//    return permutations
+//}
 
 fun countOccurrences(str: String, target: Set<Char>): Int {
     var count = 0
@@ -74,44 +123,52 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
 }
 
 /*
-   Brute force answer,
-   This has a big (O) of n^2 which in general is not acceptable,
-   but could be okay if data sets are small, under 1000 should be okay.
+Brute force answer,
+This has a big (O) of n^2 which in general is not acceptable,
+but could be okay if data sets are small, under 1000 should be okay.
 
-   NOTE: The rules seem to enable some significant optimizations. For example I think all even
-   streets can be safely matched with the drivers with the greatest number of vowels, but only given
-   the multipliers provided 1.5, 1.0, 1.5.
+NOTE: The rules seem to enable some significant optimizations. For example I think all even
+streets can be safely matched with the drivers with the greatest number of vowels, but only given
+the multipliers provided 1.5, 1.0, 1.5.
 
-   But before it is worth spending any time on *brittle* optimizations like that some question need to be
-   answered by asking the product requirement owners and testing and analysing:
+But before it is worth spending any time on *brittle* optimizations like that some question need to be
+answered by asking the product requirement owners and testing and analysing:
 
-    First: Is there a problem that optimization solves? On the datasets we anticipate does analysis or
-    stress testing show an issue? Are there latency issues for users? Costs for network, server
-    time/storage, wear on the device flash (which does wear out if you read and write all the time)?
-    Are there battery consumption issues, or overheating?
-    If not what are we optimizing? Are we scared of wearing out the CPU? :)
+First: Is there a problem that optimization solves? On the datasets we anticipate does analysis or
+stress testing show an issue? Are there latency issues for users? Costs for network, server
+time/storage, wear on the device flash (which does wear out if you read and write all the time)?
+Are there battery consumption issues, or overheating?
+If not what are we optimizing? Are we scared of wearing out the CPU? :)
 
-    If there is a need to optimize:
-    1) Ask product owners and understand  what is the real world problem we are trying
-    to solve? Is there another way to do it with rules that are less combinatorially expensive?
-    2) Are theses rules stable? Or do the rules and values change?  If so, how often, and is it worth
-    the effort required?
-    3) Are there generic optimizations that work? Trade off larger big (O) space for a lower big (0) computation
-     speed, Memoization, etc. Other?
-    4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
-    This is how the Traveling Salesman problem is "solved" in practice.
- */
-fun  maxSsDriverDestinationSet(  drivers: Array<String>,
-                 shipments: Array<String>): MutableMap<String, String> {
+If there is a need to optimize:
+1) Ask product owners and understand  what is the real world problem we are trying
+to solve? Is there another way to do it with rules that are less combinatorially expensive?
+Or allow other optimizations, For example if routes and driver sets are stable we could calculate and
+store the result once for all clients on a server.
+2) Are the rules stable? Or do the rules and parameters change?  If so, how often, and is it worth
+the effort required?
+3) Are there generic optimizations that work? Trade off larger big (O) space for a lower big (0) computation
+ speed, Memoization, etc. Other?
+4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
+This is how the Traveling Salesman problem is "solved" in practice.
+
+
+*/
+
+fun maxSsDriverDestinationSet(
+    drivers: Array<String>,
+    shipments: Array<String>
+): MaxSsDriverDestinationValues {
     /* A potential optimization... maybe not worth it because the calculation is not that bad.
-     But shows I know about "Memoization". We could also store the final result,
-     maybe even storing it and tracking a change in data set.
+ But shows I know about "Memoization". We could also store the final result,
+ maybe even storing it and tracking a change in data set.
 
-     But before making storage speed tradeoffs, or doing any work on optimization we have
-     first identify the problem and confirm many questions I outlined in other comments.
-     */
-    val driverRouteToScoreLookUp:  MutableMap<String,Float> = HashMap<String, Float>().toMutableMap()
-
+ But before making storage speed tradeoffs, or doing any work on optimization we have
+ first identify the problem and confirm many questions I outlined in other comments.
+ */
+    val driverRouteToScoreLookUp: MutableMap<String, Float> =
+        HashMap<String, Float>().toMutableMap()
+    var iterationCount = 0 // Sanity check. Did we do all combinations?
     var maxSS = 0f
     var currentSS: Float
     var ssSum = 0f
@@ -119,61 +176,81 @@ fun  maxSsDriverDestinationSet(  drivers: Array<String>,
         HashMap<String, String>().toMutableMap()
     val candidateRouteTable: MutableMap<String, String> =
         HashMap<String, String>().toMutableMap()
+    // for (shippingIndexOffset in shipments.indices) {
+    /*
+ We get all the combinations by matching driver at index i with shipment
+shippingIndex[i]   We progress through the combination in a way incremental
+ way that creates a full valid candidate routing table at each iteration of the outer loop.
+ This lets us test whether this is the Max SS route that we copy and save or not, in
+ which case we do not have to store it.
+*/
+//        Log.d(
+//            "ProcessData",
+//            " $shippingIndexOffset) shipments ${shipments[shippingIndexOffset]}  start"
+//        )
+    val n = shipments.size
+    val digits = (0 until n).toList()
+    val stack = mutableListOf(mutableListOf<Int>())
 
-    for (shippingIndexOffset in shipments.indices) {
-        /*
-         We get all the combinations by matching driver at index i with shipment
-         i+shippingIndexOffset mod list.size.  We progress through the combination in a way incremental
-         way that creates a full valid candidate routing table at each iteration of the outer loop.
-         This lets us test whether this is the Max SS route that we copy and save or not in
-         which case we do not have to store it.
-        */
-        Log.d(
-            "ProcessData",
-            " $shippingIndexOffset) shipments ${shipments[shippingIndexOffset]}  start")
-        if (ssSum > maxSS) {
-            maxSS = ssSum
-            maxSSDriverRouteTable = candidateRouteTable.toMutableMap()
-        }
-        ssSum = 0f
-        candidateRouteTable.clear()
-
-        for (i in drivers.indices) {
-            val shipmentIndex: Int = (i + shippingIndexOffset) % drivers.size
-            val driver = drivers[i]
-            val shipment = shipments[shipmentIndex]
-            val key = "$driver -> $shipment"
-            candidateRouteTable[driver]=shipment
-            currentSS = if (!driverRouteToScoreLookUp.containsKey(key)) {
-                calcDriverDestinationSS(driver, shipment)
-            } else {
-                driverRouteToScoreLookUp.get(key)!!
+    // Generate all permutation of indexes this should get us all sets of n drivers to n shipments
+    while (stack.isNotEmpty()) {
+        val current = stack.removeLast()
+        if (current.size != n) {
+            for (digit in digits) {
+                if (!current.contains(digit)) {
+                    val newCurrent = current.toMutableList()
+                    newCurrent.add(digit)
+                    stack.add(newCurrent)
+                }
             }
-            driverRouteToScoreLookUp[key] = currentSS
-            ssSum += currentSS
-        }
-        Log.d(
-            "ProcessData",
-            " $shippingIndexOffset) shipment ${shipments[shippingIndexOffset]} end \n start Score $ssSum "
-        )
-    }
-    return maxSSDriverRouteTable
+        } else {
+            var shipmentPermutedIndex = current.toTypedArray()
+            if (ssSum > maxSS) {
+                maxSS = ssSum
+                maxSSDriverRouteTable = candidateRouteTable.toMutableMap()
+            }
+            ssSum = 0f
+            candidateRouteTable.clear()
+            iterationCount++
+            for (i in drivers.indices) {
+                val shipmentIndex: Int =
+                    shipmentPermutedIndex[i] //(i + shippingIndexOffset) % drivers.size
+                val driver = drivers[i]
+                val shipment = shipments[shipmentIndex]
+                val key = "$driver -> $shipment"
+                candidateRouteTable[driver] = shipment
+                currentSS = if (!driverRouteToScoreLookUp.containsKey(key)) {
+                    calcDriverDestinationSS(driver, shipment)
+                } else {
+                    driverRouteToScoreLookUp.get(key)!!
+                }
+                driverRouteToScoreLookUp[key] = currentSS
+                ssSum += currentSS
+            }
+//        Log.d(
+//            "ProcessData",
+//            " $shippingIndexOffset) shipment ${shipments[shippingIndexOffset]} end \n start Score $ssSum "
+//        )
+        } // if new permutation available
+    }// While permuting
+    return MaxSsDriverDestinationValues(maxSSDriverRouteTable,driverRouteToScoreLookUp,  iterationCount, maxSS)
 }
 
+
 /* Parsing  street names out in a simplistic and brittle way, not acceptable for production .
- Parsing arbitrary addresses reliably is beyond the scope of level of effort
+Parsing arbitrary addresses reliably is beyond the scope of level of effort
 suggested for this exercise. Luckily the data set presented *seems* support simply taking the first
 two words of in each address. And thus avoiding the potholes of "Stravenue",*/
 fun parseStreetNameFromAddress(address: String): Result<String> {
     return try {
         val addressElements = address.split(" ")
         /*
-             Destination addresses in the given set follow the format that allows
-             BNF parsing generalization:
-             shipment =: <StreetNumber>" "<StreetNamePart1>" "<StreetNamePart2>" "<Other>
-             For example
-             "63187 Volkman Garden Suite 447",
-         */
+         Destination addresses in the given set follow the format that allows
+         BNF parsing generalization:
+         shipment =: <StreetNumber>" "<StreetNamePart1>" "<StreetNamePart2>" "<Other>
+         For example
+         "63187 Volkman Garden Suite 447",
+     */
         val streetName = "${addressElements[1]} ${addressElements[2]}"
         Result.success(streetName)
 

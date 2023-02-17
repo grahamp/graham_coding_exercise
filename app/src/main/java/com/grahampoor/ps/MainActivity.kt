@@ -12,7 +12,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.grahampoor.ps.rules.Worker
 import com.grahampoor.ps.ui.theme.Graham_PSTheme
 
@@ -21,16 +20,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
+import com.grahampoor.ps.rules.ProcessDataByRules
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val worker = Worker()
-        worker.selectedRoute.observeForever { route ->
+        val processData = ProcessDataByRules()
+        processData.selectedRoute.observeForever { route ->
             setContent {
                 Graham_PSTheme {
-                    DriverScreen(worker)
+                    DriverScreen(processData)
                 }
             }
         }
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun DriverScreen(worker : Worker) {
+fun DriverScreen(processData : ProcessDataByRules) {
     var selectedItem by remember { mutableStateOf<String?>(null) }
 
 
@@ -48,10 +48,10 @@ fun DriverScreen(worker : Worker) {
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background
     ) {
-        DriverList(items = worker.drivers.value!!.toList(),
-            worker.selectedRoute.value!!, onItemSelected = { selectedItem = it
-                worker.selectedRoute.postValue(worker.optimalRoutes.get(selectedItem)) }, onButtonClicked = {
-                worker.selectedRoute.postValue(worker.optimalRoutes.get(selectedItem))
+        DriverList(items = processData.drivers.value!!.toList(),
+            processData.selectedRoute.value!!, onItemSelected = { selectedItem = it
+                processData.selectedRoute.postValue(processData.optimalRoutes[selectedItem]) }, onButtonClicked = {
+                processData.selectedRoute.postValue(processData.optimalRoutes[selectedItem])
             })
     }
 }
