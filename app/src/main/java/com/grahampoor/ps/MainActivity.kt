@@ -20,8 +20,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.ExperimentalUnitApi
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.MutableLiveData
 import com.grahampoor.ps.repository.ProcessedData
 import com.grahampoor.ps.repository.ProcessedRoutes
 import com.grahampoor.ps.repository.State
@@ -32,7 +34,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-            ProcessedRoutes().processedRouteData.observeForever { routeResult ->
+        ProcessedRoutes().processedRouteData.observeForever { routeResult ->
             setContent {
                 Graham_PSTheme {
                     DriverScreen(DriverRouteViewModel(routeResult))
@@ -42,52 +44,54 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalUnitApi::class)
 @Composable
 fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
     var selectedDriver by remember { mutableStateOf<String?>(null) }
-
 
     // A surface container using the 'background' color from the theme
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background
     ) {
-        DriverList(items = driverRouteViewModel.drivers,
-            driverRouteViewModel.currentRoute, onItemSelected = {
-                driverRouteViewModel.selectedDriver.postValue(it)
-            }, onButtonClicked = {
-                openMapsToAddress(RoutingApp.instance, driverRouteViewModel.currentRoute)
-            })
+        Column(Modifier.fillMaxSize()) {
+            // Button
+            Button(
+                onClick = {
+                    openMapsToAddress(RoutingApp.instance, driverRouteViewModel.currentRoute)
+                },
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(16.dp)
+            ) {
+                Text("Show Map")
+            }
+            DriverList(items = driverRouteViewModel.drivers,
+                driverRouteViewModel.currentRoute, onItemSelected = {
+                    selectedDriver = it
+                    driverRouteViewModel.selectedDriver.postValue(it)
+                })
+
+        }
     }
 }
 
 
-//@Composable
-//fun MyScreen() {
-//    val items = listOf("Item 1", "Item 2", "Item 3")
-//    var selectedItem : String? by remember { mutableStateOf<String?>() }
-//
-//    DriverList(items = items, onItemSelected = { selectedItem = it }, onButtonClicked = {
-//        // Handle button click here
-//    })
-//
-//    // Use the selected item here
-//    if (selectedItem != null) {
-//        // ...
-//    }
-//}
-
-
+@OptIn(ExperimentalUnitApi::class)
 @Composable
 fun DriverList(
     items: List<String>,
     route: String,
     onItemSelected: (String) -> Unit,
-    onButtonClicked: () -> Unit
 ) {
-    Column(Modifier.fillMaxSize()) {
+    Text(
+        text = route,
+        modifier = Modifier.padding(16.dp),
+        fontSize = TextUnit(28f, TextUnitType.Sp)
+    )
+    Column(Modifier.wrapContentSize()) {
         LazyColumn(
-            Modifier.weight(1f),
+            Modifier.weight(0.5f),
             contentPadding = PaddingValues(16.dp)
         ) {
 
@@ -101,17 +105,8 @@ fun DriverList(
                 )
             }
         }
-
-        // Button
-        Button(
-            onClick = onButtonClicked,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text("Show Map")
-        }
     }
+
 }
 
 fun openMapsToAddress(context: Context, address: String) {
@@ -129,13 +124,14 @@ fun openMapsToAddress(context: Context, address: String) {
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    val testMap = hashMapOf<String,String>()
-    testMap["a"]="1"
-    testMap["b"]="2"
-    testMap["c"]="3"
-    testMap["d"]="4"
+    val testMap = hashMapOf<String, String>()
+    testMap["a"] = "1"
+    testMap["b"] = "2"
+    testMap["c"] = "3"
+    testMap["d"] = "4"
+    testMap["f"] = "5"
 
-    val drm = DriverRouteViewModel(Result.success(ProcessedData( testMap, State.DataAvailable)))
+    val drm = DriverRouteViewModel(Result.success(ProcessedData(testMap, State.DataAvailable)))
 
     Graham_PSTheme {
         DriverScreen(drm)

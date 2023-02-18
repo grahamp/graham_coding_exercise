@@ -8,7 +8,6 @@ import kotlinx.coroutines.launch
 
 class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
     val processedRouteData = MutableLiveData<Result<ProcessedData>>()
-    private val driversShipmentsReady = MutableLiveData<Result<Any>>()
     private val processedDataError = Result.success(ProcessedData(HashMap(), State.Error))
 
     init {
@@ -24,34 +23,7 @@ class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
 
         // Launch a coroutine to run the function on a background thread
         scope.launch {
-            readDriverShipments()
-
-        }
-        driversShipmentsReady.observeForever { result ->
-            if (result.isSuccess) {
-                val driversShipments: DriversShipments = result.getOrThrow() as DriversShipments
-                try {
-                    val optimalRoutes = maxSsDriverDestinationSet(
-                        driversShipments.drivers.toTypedArray(),
-                        driversShipments.shipments.toTypedArray()
-                    )
-                    processedRouteData.postValue(
-                        Result.success(
-                            ProcessedData(
-                                optimalRoutes.maxSSDriverRouteTable,
-                                State.DataAvailable
-                            )
-                        )
-                    )
-                } catch (e: Exception) {
-                    // ToDo improve error handling in stream
-                    processedRouteData.postValue(processedDataError)
-                }
-            } else {
-                processedRouteData.postValue(processedDataError)
-            }
-        }
-        driversShipmentsReady.observeForever { result ->
+            val result = readDriverShipments()
             if (result.isSuccess) {
                 val driversShipments: DriversShipments = result.getOrThrow() as DriversShipments
                 try {
@@ -77,11 +49,12 @@ class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
         }
     }
 
-    private fun readDriverShipments() {
-        try {
-            driversShipmentsReady.postValue(Result.success(readResourceFile()))
+
+    private fun readDriverShipments(): Result<Any> {
+        return try {
+            Result.success(readResourceFile())
         } catch (e: Exception) {
-            driversShipmentsReady.postValue(Result.success(e))
+            Result.success(e)
         }
     }
 
