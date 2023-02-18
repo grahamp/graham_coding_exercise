@@ -37,7 +37,8 @@ class MainActivity : ComponentActivity() {
         ProcessedRoutes().processedRouteData.observeForever { routeResult ->
             setContent {
                 Graham_PSTheme {
-                    DriverScreen(DriverRouteViewModel(routeResult))
+                    val driverRouteViewModel = DriverRouteViewModel(routeResult)
+                    DriverScreen(driverRouteViewModel)
                 }
             }
         }
@@ -66,11 +67,18 @@ fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
             ) {
                 Text("Show Map")
             }
+            Text(
+                text = driverRouteViewModel.currentRoute,
+                modifier = Modifier.padding(16.dp),
+                fontSize = TextUnit(28f, TextUnitType.Sp)
+            )
             DriverList(items = driverRouteViewModel.drivers,
-                driverRouteViewModel.currentRoute, onItemSelected = {
+                onItemSelected = {
                     selectedDriver = it
+                    driverRouteViewModel.currentRoute = it
                     driverRouteViewModel.selectedDriver.postValue(it)
                 })
+
 
         }
     }
@@ -81,14 +89,9 @@ fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
 @Composable
 fun DriverList(
     items: List<String>,
-    route: String,
     onItemSelected: (String) -> Unit,
 ) {
-    Text(
-        text = route,
-        modifier = Modifier.padding(16.dp),
-        fontSize = TextUnit(28f, TextUnitType.Sp)
-    )
+
     Column(Modifier.wrapContentSize()) {
         LazyColumn(
             Modifier.weight(0.5f),
