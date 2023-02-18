@@ -43,7 +43,7 @@ to code for the author, Graham Poor, and code reviewer.
 /*
 
  */
-/* Only support ascii characters in names.  */
+/* Only support roman ascii characters in names.  */
 /*
 Given that I don't understand the reasoning for these rules.
 The decision is taken that 'y' is not a vowel, would communicate this to the person responsible for rules.
@@ -173,7 +173,7 @@ shippingIndex[i]   We progress through the combination in a way incremental
                 }
             }
         } else {
-            var shipmentPermutedIndex = current.toTypedArray()
+            val shipmentPermutedIndex = current.toTypedArray()
             if (ssSum > maxSS) {
                 maxSS = ssSum
                 maxSSDriverRouteTable = candidateRouteTable.toMutableMap()
@@ -191,7 +191,7 @@ shippingIndex[i]   We progress through the combination in a way incremental
                 currentSS = if (!driverRouteToScoreLookUp.containsKey(key)) {
                     calcDriverDestinationSS(driver, shipment)
                 } else {
-                    driverRouteToScoreLookUp.get(key)!!
+                    driverRouteToScoreLookUp[key]!!
                 }
                 driverRouteToScoreLookUp[key] = currentSS
                 ssSum += currentSS
@@ -236,7 +236,7 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
 
 
 class DriverProcessed(driverIn: String) {
-    val driver = driverIn
+    private val driver = driverIn
     val vowels: Int = countOccurrences(driver, vowelsSet)
     val consonant: Int = countOccurrences(driver, consonantsSet)
     val factors2: Set<Int> = findFactorsGreaterThanOne(driver.length)

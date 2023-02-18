@@ -5,10 +5,6 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.grahampoor.ps.R
 import com.grahampoor.ps.RoutingApp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 
 data class DriversShipments(
