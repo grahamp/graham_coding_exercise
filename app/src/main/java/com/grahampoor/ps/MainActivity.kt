@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
         var selectedDriver by remember { mutableStateOf<String?>(null) }
+        val context = LocalContext.current // get the activity context
 
         // A surface container using the 'background' color from the theme
         Surface(
@@ -72,13 +74,13 @@ class MainActivity : ComponentActivity() {
                 // Button
                 Button(
                     onClick = {
-                        openMapsToAddress(RoutingApp.instance, driverRouteViewModel.currentRoute)
+                        openMapsRouteToAddress(context, driverRouteViewModel.currentRoute)
                     },
                     modifier = Modifier
                         .wrapContentSize()
                         .padding(16.dp)
                 ) {
-                    Text("Show Map")
+                    Text("Show Route")
                 }
                 Text(
                     text = driverRouteViewModel.currentRoute,
@@ -124,9 +126,13 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    fun openMapsToAddress(context: Context, address: String) {
-        val intentUri = Uri.parse("geo:0,0?q=$address")
-        val mapIntent = Intent(Intent.ACTION_VIEW, intentUri)
+    fun openMapsRouteToAddress(context: Context, address: String) {
+        // Finds some street with the right address and number
+        val intentUriForMap = Uri.parse("geo:0,0?q=$address")
+        // This fits the spirit of the exercise but fails with these addresses with the state
+        val intentUriForRoute = Uri.parse("google.navigation:q=$address") // create the Uri with the address
+
+        val mapIntent = Intent( Intent.ACTION_VIEW, intentUriForMap)
         mapIntent.setPackage("com.google.android.apps.maps")
         if (mapIntent.resolveActivity(context.packageManager) != null) {
             context.startActivity(mapIntent)
