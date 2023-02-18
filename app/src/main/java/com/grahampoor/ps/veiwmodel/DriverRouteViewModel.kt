@@ -1,5 +1,6 @@
 package com.grahampoor.ps.veiwmodel
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.grahampoor.ps.repository.IProcessedRoutes
@@ -10,7 +11,13 @@ class DriverRouteViewModel(resultIn: Result<ProcessedData>) : ViewModel() {
     val result = resultIn
     private val NoRouteAvalableMessage = "No Route Available "
     var drivers = ArrayList<String>()
-    val selectedDriver = MutableLiveData<String>()
+
+    private val _selectedDriver = MutableLiveData<String>()
+    val selectedDriver : LiveData<String> = _selectedDriver
+    fun setDriver(userSelectedDriver : String) {
+        // Fetch user data from the repository and update the LiveData
+        _selectedDriver.postValue(userSelectedDriver)
+    }
     var currentRoute = NoRouteAvalableMessage
     fun updateRoute() {
         if (result.isSuccess)
@@ -39,7 +46,6 @@ class DriverRouteViewModel(resultIn: Result<ProcessedData>) : ViewModel() {
     }
 
     init {
-
         updateRoute()
         selectedDriver.observeForever { selectedDriver ->
             currentRoute = result.getOrThrow().maxSSDriverRouteTable[selectedDriver]!!
