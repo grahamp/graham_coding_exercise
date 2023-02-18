@@ -19,125 +19,143 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.ExperimentalUnitApi
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import com.grahampoor.ps.repository.ProcessedData
 import com.grahampoor.ps.repository.ProcessedRoutes
 import com.grahampoor.ps.repository.State
 import com.grahampoor.ps.veiwmodel.DriverRouteViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val processedRoutes = ProcessedRoutes()
 
-            ProcessedRoutes().processedRouteData.observeForever { routeResult ->
+        processedRoutes.processedRouteData.observe(this) { routeResult ->
             setContent {
                 Graham_PSTheme {
-                    DriverScreen(DriverRouteViewModel(routeResult))
+                    val driverRouteViewModel = DriverRouteViewModel(routeResult)
+                    setContent {
+                        DriverScreen(driverRouteViewModel)
+                    }
+                    driverRouteViewModel.selectedDriver.observe(this) {
+                    setContent {
+                            DriverScreen(driverRouteViewModel)
+                        }
+                    }
+                }
+            }
+
+        }
+        lifecycleScope.launch {
+            processedRoutes.run()
+        }
+    }
+
+    @OptIn(ExperimentalUnitApi::class)
+    @Composable
+    fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
+        var selectedDriver by remember { mutableStateOf<String?>(null) }
+        val context = LocalContext.current // get the activity context
+
+        // A surface container using the 'background' color from the theme
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colors.background
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                // Button
+                Button(
+                    onClick = {
+                        openMapsRouteToAddress(context, driverRouteViewModel.currentRoute)
+                    },
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .padding(16.dp)
+                ) {
+                    Text("Show Route")
+                }
+                Text(
+                    text = driverRouteViewModel.currentRoute,
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = TextUnit(28f, TextUnitType.Sp)
+                )
+                DriverList(items = driverRouteViewModel.drivers,
+                    onItemSelected = {
+                        selectedDriver = it
+                        driverRouteViewModel.setDriver(it)
+                    })
+
+
+            }
+        }
+    }
+
+
+
+    @Composable
+    fun DriverList(
+        items: List<String>,
+        onItemSelected: (String) -> Unit,
+    ) {
+
+        Column(Modifier.wrapContentSize()) {
+            LazyColumn(
+                Modifier.weight(0.5f),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+
+                items(items) { item ->
+                    Text(
+                        text = item,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onItemSelected(item) }
+                            .padding(16.dp)
+                    )
                 }
             }
         }
+
     }
-}
 
-@Composable
-fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
-    var selectedDriver by remember { mutableStateOf<String?>(null) }
+    fun openMapsRouteToAddress(context: Context, address: String) {
+        // Finds some street with the right address and number
+        val intentUriForMap = Uri.parse("geo:0,0?q=$address")
+        // This fits the spirit of the exercise but fails with these addresses with the state
+        val intentUriForRoute = Uri.parse("google.navigation:q=$address") // create the Uri with the address
 
-
-    // A surface container using the 'background' color from the theme
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colors.background
-    ) {
-        DriverList(items = driverRouteViewModel.drivers,
-            driverRouteViewModel.currentRoute, onItemSelected = {
-                driverRouteViewModel.selectedDriver.postValue(it)
-            }, onButtonClicked = {
-                openMapsToAddress(RoutingApp.instance, driverRouteViewModel.currentRoute)
-            })
-    }
-}
-
-
-//@Composable
-//fun MyScreen() {
-//    val items = listOf("Item 1", "Item 2", "Item 3")
-//    var selectedItem : String? by remember { mutableStateOf<String?>() }
-//
-//    DriverList(items = items, onItemSelected = { selectedItem = it }, onButtonClicked = {
-//        // Handle button click here
-//    })
-//
-//    // Use the selected item here
-//    if (selectedItem != null) {
-//        // ...
-//    }
-//}
-
-
-@Composable
-fun DriverList(
-    items: List<String>,
-    route: String,
-    onItemSelected: (String) -> Unit,
-    onButtonClicked: () -> Unit
-) {
-    Column(Modifier.fillMaxSize()) {
-        LazyColumn(
-            Modifier.weight(1f),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-
-            items(items) { item ->
-                Text(
-                    text = item,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onItemSelected(item) }
-                        .padding(16.dp)
-                )
-            }
-        }
-
-        // Button
-        Button(
-            onClick = onButtonClicked,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text("Show Map")
+        val mapIntent = Intent( Intent.ACTION_VIEW, intentUriForMap)
+        mapIntent.setPackage("com.google.android.apps.maps")
+        if (mapIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(mapIntent)
+        } else {
+            Toast.makeText(context, "Google Maps app not installed", Toast.LENGTH_SHORT).show()
         }
     }
-}
-
-fun openMapsToAddress(context: Context, address: String) {
-    val intentUri = Uri.parse("geo:0,0?q=$address")
-    val mapIntent = Intent(Intent.ACTION_VIEW, intentUri)
-    mapIntent.setPackage("com.google.android.apps.maps")
-    if (mapIntent.resolveActivity(context.packageManager) != null) {
-        context.startActivity(mapIntent)
-    } else {
-        Toast.makeText(context, "Google Maps app not installed", Toast.LENGTH_SHORT).show()
-    }
-}
 
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    val testMap = hashMapOf<String,String>()
-    testMap["a"]="1"
-    testMap["b"]="2"
-    testMap["c"]="3"
-    testMap["d"]="4"
+    @Preview(showBackground = true)
+    @Composable
+    fun DefaultPreview() {
+        val testMap = hashMapOf<String, String>()
+        testMap["a"] = "1"
+        testMap["b"] = "2"
+        testMap["c"] = "3"
+        testMap["d"] = "4"
+        testMap["f"] = "5"
 
-    val drm = DriverRouteViewModel(Result.success(ProcessedData( testMap, State.DataAvailable)))
+        val drm = DriverRouteViewModel(Result.success(ProcessedData(testMap, State.DataAvailable)))
 
-    Graham_PSTheme {
-        DriverScreen(drm)
+        Graham_PSTheme {
+            DriverScreen(drm)
+        }
     }
 }
