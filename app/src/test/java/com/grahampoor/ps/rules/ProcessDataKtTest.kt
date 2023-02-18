@@ -48,7 +48,7 @@ class ProcessDataKtTest {
         val optimalRoutes = maxSsDriverDestinationSet(
             drivers= drivers.subList(0,10).toTypedArray(),
             shipments = shipments.subList(0,10).toTypedArray())
-        assertEquals( drivers.size, optimalRoutes.size)
+        assertEquals( drivers.size, optimalRoutes.driverRouteToScoreLookUp)
     }
 
 

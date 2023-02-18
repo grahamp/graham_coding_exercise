@@ -1,0 +1,91 @@
+package com.grahampoor.ps.repository
+
+import androidx.lifecycle.MutableLiveData
+import com.grahampoor.ps.rules.maxSsDriverDestinationSet
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
+    val processedRouteData = MutableLiveData<Result<ProcessedData>>()
+    private val driversShipmentsReady = MutableLiveData<Result<Any>>()
+    private val processedDataError = Result.success(ProcessedData(HashMap(), State.Error))
+
+    init {
+        processedRouteData.postValue(
+            Result.success(
+                ProcessedData(
+                    HashMap(),
+                    State.Initialized
+                )
+            )
+        )
+        val scope = CoroutineScope(Dispatchers.Default)
+
+        // Launch a coroutine to run the function on a background thread
+        scope.launch {
+            readDriverShipments()
+
+        }
+        driversShipmentsReady.observeForever { result ->
+            if (result.isSuccess) {
+                val driversShipments: DriversShipments = result.getOrThrow() as DriversShipments
+                try {
+                    val optimalRoutes = maxSsDriverDestinationSet(
+                        driversShipments.drivers.toTypedArray(),
+                        driversShipments.shipments.toTypedArray()
+                    )
+                    processedRouteData.postValue(
+                        Result.success(
+                            ProcessedData(
+                                optimalRoutes.maxSSDriverRouteTable,
+                                State.DataAvailable
+                            )
+                        )
+                    )
+                } catch (e: Exception) {
+                    // ToDo improve error handling in stream
+                    processedRouteData.postValue(processedDataError)
+                }
+            } else {
+                processedRouteData.postValue(processedDataError)
+            }
+        }
+        driversShipmentsReady.observeForever { result ->
+            if (result.isSuccess) {
+                val driversShipments: DriversShipments = result.getOrThrow() as DriversShipments
+                try {
+                    val optimalRoutes = maxSsDriverDestinationSet(
+                        driversShipments.drivers.toTypedArray(),
+                        driversShipments.shipments.toTypedArray()
+                    )
+                    processedRouteData.postValue(
+                        Result.success(
+                            ProcessedData(
+                                optimalRoutes.maxSSDriverRouteTable,
+                                State.DataAvailable
+                            )
+                        )
+                    )
+                } catch (e: Exception) {
+                    // ToDo improve error handling in stream
+                    processedRouteData.postValue(processedDataError)
+                }
+            } else {
+                processedRouteData.postValue(processedDataError)
+            }
+        }
+    }
+
+    private fun readDriverShipments() {
+        try {
+            driversShipmentsReady.postValue(Result.success(readResourceFile()))
+        } catch (e: Exception) {
+            driversShipmentsReady.postValue(Result.success(e))
+        }
+    }
+
+    override fun getData(): MutableLiveData<Result<ProcessedData>> {
+        return processedRouteData
+    }
+}

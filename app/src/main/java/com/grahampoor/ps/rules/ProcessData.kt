@@ -1,8 +1,5 @@
 package com.grahampoor.ps.rules
 
-import androidx.lifecycle.MutableLiveData
-import com.grahampoor.ps.repository.DriversShipments
-import com.grahampoor.ps.repository.readResourceFile
 
 /*
 
@@ -32,7 +29,6 @@ IMPLICIT Rules
 4) Assign all the drivers to streets such that the sum of SS is maximized.
 
 Brute force for each driver, calculate SS for each destination value.
-Brute force big O = 2^n for common factors.
 
 BUT the drivers with the most vowels are guaranteed to produce the greater or equal values to any
 other driver when matched
@@ -77,40 +73,7 @@ data class MaxSsDriverDestinationValues(
     val maxSS: Float
 )
 
-class ProcessDataByRules {
 
-    private val driversShipments: DriversShipments = readResourceFile()
-    val drivers = MutableLiveData<List<String>>(driversShipments.drivers)
-    public val optimalRoutes = maxSsDriverDestinationSet(
-        driversShipments.drivers.toTypedArray(),
-        driversShipments.shipments.toTypedArray()
-    ).maxSSDriverRouteTable
-
-    // TODO Don't think this should hold a users state from a GUI selection.
-    val selectedRoute = MutableLiveData<String>("No Route No Driver Selected")
-
-
-} // end processDataByRules
-
-//fun generatePermutations(n: Int): List<Array<Int>> {
-//    val digits = (0..n).toList()
-//    val permutations = mutableListOf<Array<Int>>()
-//    val stack = mutableListOf(mutableListOf<Int>())
-//    while (stack.isNotEmpty()) {
-//        val current = stack.removeLast()
-//        if (current.size != n) {
-//            for (digit in digits) {
-//                if (!current.contains(digit)) {
-//                    val newCurrent = current.toMutableList()
-//                    newCurrent.add(digit)
-//                    stack.add(newCurrent)
-//                }
-//            }
-//        }
-//        var shipments = current.toTypedArray()
-//    }
-//    return permutations
-//}
 
 fun countOccurrences(str: String, target: Set<Char>): Int {
     var count = 0
@@ -147,8 +110,14 @@ Or allow other optimizations, For example if routes and driver sets are stable w
 store the result once for all clients on a server.
 2) Are the rules stable? Or do the rules and parameters change?  If so, how often, and is it worth
 the effort required?
-3) Are there generic optimizations that work? Trade off larger big (O) space for a lower big (0) computation
- speed, Memoization, etc. Other?
+3) Are there generic optimizations that work? Trade off larger big (O) space for a lower big (0)
+computation
+ speed, Memoization, other? Chat GPT suggested a greedy algorithm I assume putting the n2
+ driver->route combinations in a max heap. If the problem was to take the best n driver->routes
+ that would be the solution, but because we need to select n distinct drivers and n distinct routes
+ it is more complex: n heaps and pull from each until you get a valid set? That doesn't seem better
+ in the worst case. And the solution I have only generates and considers valid sets, which might
+ be an advantage.
 4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
 This is how the Traveling Salesman problem is "solved" in practice.
 
