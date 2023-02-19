@@ -6,8 +6,6 @@ import com.grahampoor.ps.rules.ProcessProgressData
 import com.grahampoor.ps.rules.maxSsDriverDestinationSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
@@ -65,7 +63,7 @@ class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
 
     private fun readDriverShipments(): Result<Any> {
         return try {
-            Result.success(readResourceFile(R.raw.trucks_drivers8))
+            Result.success(readResourceFile(R.raw.trucks_drivers))
         } catch (e: Exception) {
             Result.success(e)
         }

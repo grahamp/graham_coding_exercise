@@ -135,26 +135,38 @@ data class ProcessProgressData(
 ) {
     override fun toString(): String {
         val p = factorial(size).toDouble()
-        return "Total drivers->routes sets\n"+
+        return "Total drivers->routes sets\n" +
                 "${"%.0f".format(p)} of $size \n" +
-                "${((combinationCount.toDouble()/p)*100).toInt()} % complete \n" +
-                "SSMax= $ssMax current= $ssValue"
+                "Cur= $ssValue\n" +
+                "SSMax= $ssMax\n" +
+                "${percent(combinationCount.toDouble(), p)} % complete \n"
     }
+
+    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
 }
 
 /**
  * Max ss driver destination set
  *
- * We get all the combinations by matching driver at index i with shipment
- * shippingIndex[i]   We progress through the combination in a way incremental
+ * We get all the combinations by matching driver at index i with each permutation of indexes
+ * permutedShippingIndex[i]   We progress through the combination of driver->routes in a way incremental
  * way that creates a full valid candidate routing table at each iteration of the outer loop.
  * This lets us test whether this is the Max SS route that we copy and save or not, in
  * which case we do not have to store it
  * An optimization this utilized is to store the calculated results for each of the n^2
  * driver -> route calculation a use of "Memoization". We could also store the final result,
  * maybe even storing it and tracking a change in original data set.
+ *
+ * Another potential optimization is to find the "ideal SS" this is the sum of maximum
+ * ss route for each driver. This may not be any valid set (each driver to one distinct route)
+ * that meets this ideal. But we can calculate that number after n^2 iterations and if
+ * an SS for a set matches it we can stop. And it might be the case that practically speaking
+ * this changes the problem from NP to P.
+ *
  * But before making storage speed tradeoffs, or doing any work on optimization we have
  * first identify the problem and confirm many questions I outlined in other comments.
+ *
+ *
 
 
  * @param drivers
@@ -217,8 +229,8 @@ fun maxSsDriverDestinationSet(
                 driverRouteToScoreLookUp[key] = currentSS
                 ssSum += currentSS
             }
-            combinationCount+=1
-            processStatus.postValue(ProcessProgressData(n, combinationCount , ssSum, maxSS))
+            combinationCount += 1
+            processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
 
         } // if new permutation available
     }// While permuting
@@ -361,6 +373,7 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
     }
     return count
 }
+
 fun factorial(n: Int): BigInteger {
     var result = BigInteger.ONE
     for (i in 2..n) {
