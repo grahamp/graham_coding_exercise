@@ -25,10 +25,12 @@ import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.grahampoor.ps.repository.ProcessedData
 import com.grahampoor.ps.repository.ProcessedRoutes
 import com.grahampoor.ps.repository.State
+import com.grahampoor.ps.rules.ProcessProgressData
 import com.grahampoor.ps.veiwmodel.DriverRouteViewModel
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collect
@@ -53,12 +55,14 @@ class MainActivity : ComponentActivity() {
                             DriverScreen(driverRouteViewModel)
                         }
                     }
+                    processedRoutes.processStatus.observe(this) {
+                        setContent {
+                            DriverScreen(driverRouteViewModel,it)
+                        }
+                    }
                 }
             }
 
-        }
-        processedRoutes.processStatus.observe(this) { value ->
-            println("Received value: $value")
         }
         lifecycleScope.launch {
             processedRoutes.run()
@@ -68,7 +72,8 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalUnitApi::class)
     @Composable
-    fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
+    fun DriverScreen(driverRouteViewModel: DriverRouteViewModel,
+                     processProgressData: ProcessProgressData? = null  ) {
         var selectedDriver by remember { mutableStateOf<String?>(null) }
         val context = LocalContext.current // get the activity context
 
@@ -78,17 +83,34 @@ class MainActivity : ComponentActivity() {
             color = MaterialTheme.colors.background
         ) {
             Column(Modifier.fillMaxSize()) {
+
                 // Button
-                Button(
-                    onClick = {
-                        openMapsRouteToAddress(context, driverRouteViewModel.currentRoute)
-                    },
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .padding(16.dp)
-                ) {
-                    Text("Show Route")
+                if ((selectedDriver!=null) && (driverRouteViewModel.drivers.size>0)) {
+                    Text(
+                        text = selectedDriver.toString(),
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = TextUnit(28f, TextUnitType.Sp)
+                    )
+                    Button(
+                        onClick = {
+                            openMapsRouteToAddress(context, driverRouteViewModel.currentRoute)
+                        },
+                        modifier = Modifier
+                            .wrapContentSize()
+                            .padding(16.dp)
+                    ) {
+                        Text("Show Route")
+                    }
+                } else {
+                    if (processProgressData != null) {
+                        Text(
+                            text = processProgressData.toString(),
+                            modifier = Modifier.padding(16.dp),
+                            fontSize = TextUnit(28f, TextUnitType.Sp)
+                        )
+                    }
                 }
+
                 Text(
                     text = driverRouteViewModel.currentRoute,
                     modifier = Modifier.padding(16.dp),

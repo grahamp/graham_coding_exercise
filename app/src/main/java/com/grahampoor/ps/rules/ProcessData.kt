@@ -1,7 +1,7 @@
 package com.grahampoor.ps.rules
 
 import androidx.lifecycle.MutableLiveData
-import kotlinx.coroutines.flow.MutableSharedFlow
+import java.math.BigInteger
 
 
 /*
@@ -87,9 +87,14 @@ data class MaxSsDriverDestinationValues(
 
 /*
 Brute force answer,
-This has a big (O) of n^2 which in general is not acceptable,
-but could be okay if data sets are small, under 10 should be okayish and could be mitigated by
+This has a big (O) of n!  which in general is not acceptable,
+but could be okay if data sets are under 10 should be okayish and could be mitigated by
 caching result.
+We should also offload this computation to the server to do once for all clients apps
+"Each day we get the list of shipment destinations".
+That is if the set of drivers doesn't change more often, which we don't know... need to find out.
+But at P(n) the server doesn't save us as n grows to into the 100s, 1.2676506e+30,
+ (or certainly 1000s 1.071509e+301)
 
 NOTE: The rules seem to enable some significant optimizations. For example I think all even
 streets can be safely matched with the drivers with the greatest number of vowels, but only given
@@ -125,8 +130,18 @@ This is how the Traveling Salesman problem is "solved" in practice.
 data class ProcessProgressData(
     val size: Int,
     val combinationCount: Int,
-    val maxSS: Float
-)
+    val ssValue: Float,
+    val ssMax: Float
+) {
+    override fun toString(): String {
+        val p = factorial(size).toDouble()
+        return "Total drivers->routes sets\n"+
+                "${"%.0f".format(p)} of $size \n" +
+                "${((combinationCount.toDouble()/p)*100).toInt()} % complete \n" +
+                "SSMax= $ssMax current= $ssValue"
+    }
+}
+
 /**
  * Max ss driver destination set
  *
@@ -167,7 +182,8 @@ fun maxSsDriverDestinationSet(
     val digits = (0 until n).toList()
     val stack = mutableListOf(mutableListOf<Int>())
 
-    // Generate all permutation of indexes this should get us all sets of n drivers to n shipments
+    // Generate all permutation of indexes this gets us all sets of n drivers to n shipments.
+    // But only generates the set of candidate driver routes each distinct driver to a distinct route.
     while (stack.isNotEmpty()) {
         val current = stack.removeLast()
         if (current.size != n) {
@@ -202,11 +218,8 @@ fun maxSsDriverDestinationSet(
                 ssSum += currentSS
             }
             combinationCount+=1
-            processStatus.postValue(ProcessProgressData(n, combinationCount , ssSum))
-//        Log.d(
-//            "ProcessData",
-//            " $shippingIndexOffset) shipment ${shipments[shippingIndexOffset]} end \n start Score $ssSum "
-//        )
+            processStatus.postValue(ProcessProgressData(n, combinationCount , ssSum, maxSS))
+
         } // if new permutation available
     }// While permuting
     return MaxSsDriverDestinationValues(
@@ -347,6 +360,13 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
         }
     }
     return count
+}
+fun factorial(n: Int): BigInteger {
+    var result = BigInteger.ONE
+    for (i in 2..n) {
+        result *= i.toBigInteger()
+    }
+    return result
 }
 
 
