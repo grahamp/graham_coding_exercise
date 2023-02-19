@@ -61,6 +61,7 @@ val consonantsSet = setOf(
     'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q',
     'r', 's', 't', 'v', 'x', 'y', 'z'
 )
+
 /* maxSSDriverRouteTable contains our result.
 Other values are for Unit testing sanity, to verify we tested all unique drivers to route
 sets.
@@ -75,20 +76,11 @@ data class MaxSsDriverDestinationValues(
 
 
 
-fun countOccurrences(str: String, target: Set<Char>): Int {
-    var count = 0
-    for (char in str) {
-        if (char in target) {
-            count++
-        }
-    }
-    return count
-}
-
 /*
 Brute force answer,
 This has a big (O) of n^2 which in general is not acceptable,
-but could be okay if data sets are small, under 1000 should be okay.
+but could be okay if data sets are small, under 10 should be okayish and could be mitigated by
+caching result.
 
 NOTE: The rules seem to enable some significant optimizations. For example I think all even
 streets can be safely matched with the drivers with the greatest number of vowels, but only given
@@ -121,20 +113,21 @@ computation
 4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
 This is how the Traveling Salesman problem is "solved" in practice.
 
-
 */
 
-fun maxSsDriverDestinationSet(
-    drivers: Array<String>,
-    shipments: Array<String>
-): MaxSsDriverDestinationValues {
-    /* A potential optimization... maybe not worth it because the calculation is not that bad.
- But shows I know about "Memoization". We could also store the final result,
- maybe even storing it and tracking a change in data set.
+/*
+ One optimization this fun utilizes is to store the calculated results for each of the n^2
+ driver -> route calculation a use of "Memoization". We could also store the final result,
+ maybe even storing it and tracking a change in original data set.
 
  But before making storage speed tradeoffs, or doing any work on optimization we have
  first identify the problem and confirm many questions I outlined in other comments.
  */
+fun maxSsDriverDestinationSet(
+    drivers: Array<String>,
+    shipments: Array<String>
+): MaxSsDriverDestinationValues {
+
     val driverRouteToScoreLookUp: MutableMap<String, Float> =
         HashMap<String, Float>().toMutableMap()
     var iterationCount = 0 // Sanity check. Did we do all combinations?
@@ -202,7 +195,12 @@ shippingIndex[i]   We progress through the combination in a way incremental
 //        )
         } // if new permutation available
     }// While permuting
-    return MaxSsDriverDestinationValues(maxSSDriverRouteTable,driverRouteToScoreLookUp,  iterationCount, maxSS)
+    return MaxSsDriverDestinationValues(
+        maxSSDriverRouteTable,
+        driverRouteToScoreLookUp,
+        iterationCount,
+        maxSS
+    )
 }
 
 
@@ -284,6 +282,16 @@ fun findFactorsGreaterThanOne(num: Int): Set<Int> {
         }
     }
     return factors
+}
+
+fun countOccurrences(str: String, target: Set<Char>): Int {
+    var count = 0
+    for (char in str) {
+        if (char in target) {
+            count++
+        }
+    }
+    return count
 }
 
 
