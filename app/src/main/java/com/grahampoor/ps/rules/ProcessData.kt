@@ -244,9 +244,9 @@ class DriverProcessed(driverIn: String) {
 
 /*
 Long explicit variable names throughout because the algorithm is so quirky and specific.
+Big O(sqrt(n)) where n is the letters in the street name
 */
-class AddressProcessed(fullAddressIn: String, streetNameIn: String) {
-    val fullAddress = fullAddressIn
+class AddressProcessed(streetNameIn: String) {
     private val streetName = streetNameIn
     val evenStreetName: Boolean = (0 == streetName.length / 2) // 0 is even in computer sci
     val factors2: Set<Int> = findFactorsGreaterThanOne(streetName.length)
@@ -265,7 +265,7 @@ fun calcDriverDestinationSS(
         streetNameResult.getOrThrow()
     else
         throw streetNameResult.exceptionOrNull()!!
-    val address = AddressProcessed(addressString, streetName)
+    val address = AddressProcessed(streetName)
     var ss: Float = if (address.evenStreetName) {
         driver.vowels * vowelFactor
     } else {
