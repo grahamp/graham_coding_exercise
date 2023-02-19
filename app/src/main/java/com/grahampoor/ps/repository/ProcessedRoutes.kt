@@ -2,6 +2,7 @@ package com.grahampoor.ps.repository
 
 import androidx.lifecycle.MutableLiveData
 import com.grahampoor.ps.R
+import com.grahampoor.ps.rules.ProcessProgressData
 import com.grahampoor.ps.rules.maxSsDriverDestinationSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +11,7 @@ import kotlinx.coroutines.launch
 class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
     val processedRouteData = MutableLiveData<Result<ProcessedData>>()
     private val processedDataError = Result.success(ProcessedData(HashMap(), State.Error))
+    val processStatus = MutableLiveData<ProcessProgressData>()
 
      fun run()  {
         val scope = CoroutineScope(Dispatchers.Default)
@@ -37,7 +39,8 @@ class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
                 try {
                     val optimalRoutes = maxSsDriverDestinationSet(
                         driversShipments.drivers.toTypedArray(),
-                        driversShipments.shipments.toTypedArray()
+                        driversShipments.shipments.toTypedArray(),
+                        processStatus
                     )
                     processedRouteData.postValue(
                         Result.success(

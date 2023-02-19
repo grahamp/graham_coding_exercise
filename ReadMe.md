@@ -14,7 +14,7 @@ From the command line:
 4) Build the app using Gradle: ./gradlew assembleDebug
 5) Make sure that you have a device or emulator connected to your computer before running the installation command
 6) Install the app on your device or emulator: adb install app/build/outputs/apk/debug/app-debug.apk
-7) Launch the app using the following command: adb shell am start -n com.grahampoor.ps.routingapp/.MainActivity
+7) Launch the app using the following command: adb shell am start -n com.grahampoor.ps/.MainActivity
 
 Note: Running the app you will find it takes up to a minute to see
 drivers appear in the list on screen, though you should immediately
@@ -26,14 +26,11 @@ There is also a "Show Route" button that opens Google Maps to
 the selected destination. This was not in the specification, but
 was useful in development to imagine a complete potential user flow.
 
-
-
 At this point it would be easiest to open the project in Android Studio, to run unit tests, debug, 
 analyse and look at the code and application structure:
 1) Click on "Open an existing Android Studio project"
 2) Navigate to the cloned repository folder and select the "RoutingApp" directory. 
 3) Wait for Android Studio to finish syncing the project with Gradle.
-
 
 
 

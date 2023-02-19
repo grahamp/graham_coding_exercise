@@ -25,11 +25,16 @@ import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.grahampoor.ps.repository.ProcessedData
 import com.grahampoor.ps.repository.ProcessedRoutes
 import com.grahampoor.ps.repository.State
+import com.grahampoor.ps.rules.ProcessProgressData
 import com.grahampoor.ps.veiwmodel.DriverRouteViewModel
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -46,8 +51,13 @@ class MainActivity : ComponentActivity() {
                         DriverScreen(driverRouteViewModel)
                     }
                     driverRouteViewModel.selectedDriver.observe(this) {
-                    setContent {
+                        setContent {
                             DriverScreen(driverRouteViewModel)
+                        }
+                    }
+                    processedRoutes.processStatus.observe(this) {
+                        setContent {
+                            DriverScreen(driverRouteViewModel,it)
                         }
                     }
                 }
@@ -57,11 +67,13 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             processedRoutes.run()
         }
+
     }
 
     @OptIn(ExperimentalUnitApi::class)
     @Composable
-    fun DriverScreen(driverRouteViewModel: DriverRouteViewModel) {
+    fun DriverScreen(driverRouteViewModel: DriverRouteViewModel,
+                     processProgressData: ProcessProgressData? = null  ) {
         var selectedDriver by remember { mutableStateOf<String?>(null) }
         val context = LocalContext.current // get the activity context
 
@@ -71,17 +83,34 @@ class MainActivity : ComponentActivity() {
             color = MaterialTheme.colors.background
         ) {
             Column(Modifier.fillMaxSize()) {
+
                 // Button
-                Button(
-                    onClick = {
-                        openMapsRouteToAddress(context, driverRouteViewModel.currentRoute)
-                    },
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .padding(16.dp)
-                ) {
-                    Text("Show Route")
+                if ((selectedDriver!=null) && (driverRouteViewModel.drivers.size>0)) {
+                    Text(
+                        text = selectedDriver.toString(),
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = TextUnit(28f, TextUnitType.Sp)
+                    )
+                    Button(
+                        onClick = {
+                            openMapsRouteToAddress(context, driverRouteViewModel.currentRoute)
+                        },
+                        modifier = Modifier
+                            .wrapContentSize()
+                            .padding(16.dp)
+                    ) {
+                        Text("Show Route")
+                    }
+                } else {
+                    if (processProgressData != null) {
+                        Text(
+                            text = processProgressData.toString(),
+                            modifier = Modifier.padding(16.dp),
+                            fontSize = TextUnit(28f, TextUnitType.Sp)
+                        )
+                    }
                 }
+
                 Text(
                     text = driverRouteViewModel.currentRoute,
                     modifier = Modifier.padding(16.dp),
@@ -97,7 +126,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 
 
     @Composable
@@ -132,7 +160,7 @@ class MainActivity : ComponentActivity() {
         // This fits the spirit of the exercise but fails with these addresses with the state
         // val intentUriForRoute = Uri.parse("google.navigation:q=$address") // create the Uri with the address
 
-        val mapIntent = Intent( Intent.ACTION_VIEW, intentUriForMap)
+        val mapIntent = Intent(Intent.ACTION_VIEW, intentUriForMap)
         mapIntent.setPackage("com.google.android.apps.maps")
         if (mapIntent.resolveActivity(context.packageManager) != null) {
             context.startActivity(mapIntent)
