@@ -1,40 +1,40 @@
-Platform Science Code Exercise
-Our sales team has just struck a deal with Acme Inc. to become the exclusive provider for
-routing their product shipments via 3rd party trucking fleets. The catch is that we can only route
-one shipment to one driver per day.
-Each day we get the list of shipment destinations that are available for us to offer to drivers in
-our network. Fortunately our team of highly trained data scientists have developed a
-mathematical model for determining which drivers are best suited to deliver each shipment.
-With that hard work done, now all we have to do is implement a program that assigns each
-shipment destination to a given driver while maximizing the total suitability of all shipments to
-all drivers.
-The top-secret algorithm is:
-● If the length of the shipment's destination street name is even, the base suitability score
-(SS) is the number of vowels in the driver’s name multiplied by 1.5.
-● If the length of the shipment's destination street name is odd, the base SS is the number
-of consonants in the driver’s name multiplied by 1.
-● If the length of the shipment's destination street name shares any common factors
-(besides 1) with the length of the driver’s name, the SS is increased by 50% above the
-base SS.
-Write an Android application using the attached json file as input that displays a list of drivers.
-When one is selected from the list display the correct shipment destination to that driver in a
-way that maximizes the total SS over the set of drivers. Each driver can only have one shipment
-and each shipment can only be offered to one driver.
-Deliverable
-Your app:
-● May make use of any existing open source libraries
-Send us:
-● The full source code, including any code written which is not part of the normal program
-run (e.g. build scripts)
-● Clear instructions on how to build the app
-● Please provide any deliverable and instructions using a public Github (or similar)
-repository as several people will need to inspect the solution
-Evaluation
-The point of the exercise is for us to see:
-● Code craftsmanship
-● How you think about and solve a problem
-● How you explain the approach you took and the assumptions you made
-We will especially consider:
-● Code organization
-● Code readability
-● Quality of instructions
+The following are steps to build, install, and launch Graham Poor's Coding exercise for Platform
+Science.
+
+Prerequisites: Git and the full Android Development Environment is installed and path are set up.
+Installing Git and Android Studio (Easier than installing the Android SDK and Tools separately) 
+and possible setting executable paths should be all you need to do.
+Note: You may need to replace "adb" with the path to the Android Debug Bridge if it's not in your 
+system's PATH.
+
+From the command line:
+1) Open and terminal program and navigate to a directory you want the projects root directory to be in.
+2) Clone the GitHub repository: git clone https://github.com/grahamp/graham_coding_exercise.git
+3) Navigate to the project root directory: cd graham_coding_exercise
+4) Build the app using Gradle: ./gradlew assembleDebug
+5) Make sure that you have a device or emulator connected to your computer before running the installation command
+6) Install the app on your device or emulator: adb install app/build/outputs/apk/debug/app-debug.apk
+7) Launch the app using the following command: adb shell am start -n com.grahampoor.ps.routingapp/.MainActivity
+
+Note: Running the app you will find it takes up to a minute to see
+drivers appear in the list on screen, though you should immediately
+see a message saying "No Route Available: Processing" 
+This is because of the processing required to find the optimum route set in this implementation.
+We can discuss ways this issue can be addressed.
+
+There is also a "Show Route" button that opens Google Maps to
+the selected destination. This was not in the specification, but
+was useful in development to imagine a complete potential user flow.
+
+
+
+At this point it would be easiest to open the project in Android Studio, to run unit tests, debug, 
+analyse and look at the code and application structure:
+1) Click on "Open an existing Android Studio project"
+2) Navigate to the cloned repository folder and select the "RoutingApp" directory. 
+3) Wait for Android Studio to finish syncing the project with Gradle.
+
+
+
+
+

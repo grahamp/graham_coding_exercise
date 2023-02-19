@@ -126,11 +126,11 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    fun openMapsRouteToAddress(context: Context, address: String) {
+    private fun openMapsRouteToAddress(context: Context, address: String) {
         // Finds some street with the right address and number
         val intentUriForMap = Uri.parse("geo:0,0?q=$address")
         // This fits the spirit of the exercise but fails with these addresses with the state
-        val intentUriForRoute = Uri.parse("google.navigation:q=$address") // create the Uri with the address
+        // val intentUriForRoute = Uri.parse("google.navigation:q=$address") // create the Uri with the address
 
         val mapIntent = Intent( Intent.ACTION_VIEW, intentUriForMap)
         mapIntent.setPackage("com.google.android.apps.maps")

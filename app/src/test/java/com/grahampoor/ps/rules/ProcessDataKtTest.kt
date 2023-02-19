@@ -1,16 +1,12 @@
 package com.grahampoor.ps.rules
-
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
-
 import org.junit.Test
-import javax.sql.DataSource
 
 class ProcessDataKtTest {
 
     val drivers= arrayListOf<String>(
-
         "Noemie Murphy",
         "Cleve Durgan",
         "Murphy Mosciski",
@@ -108,7 +104,7 @@ class ProcessDataKtTest {
     }
     @Test
     fun parseStreetNameFromAddress() {
-        val streetNameResult = parseStreetNameFromAddress(  "63187 Volkman Garden Suite 447",)
+        val streetNameResult = parseStreetNameFromAddress("63187 Volkman Garden Suite 447")
         assertTrue(streetNameResult.isSuccess)
         val streetName = streetNameResult.getOrThrow()
         assertEquals("Volkman Garden",streetName)
@@ -121,7 +117,7 @@ class ProcessDataKtTest {
     @Test
     fun findFactorsGreaterThanOne12() {
         val factorSet = findFactorsGreaterThanOne(12)
-        assertTrue("failed",!factorSet.intersect(setOf(2, 3, 4, 6,)).isEmpty())
+        assertTrue("failed",!factorSet.intersect(setOf(2, 3, 4, 6)).isEmpty())
     }
 
     @Test

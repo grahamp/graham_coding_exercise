@@ -13,18 +13,14 @@ data class DriversShipments(
     @SerializedName("drivers") var drivers: ArrayList<String> = arrayListOf()
 
 )
-
-//class DriversRoutesJsonReader() {
-    /* Breaking camel case for ease of JSON object dumping and reading*/
-   // val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    fun readResourceFile(resourceFile: Int = R.raw.trucks_drivers): DriversShipments {
+      fun readResourceFile(resourceFile: Int = R.raw.trucks_drivers): DriversShipments {
        // scope.launch {
             val inputStream = RoutingApp.instance.resources.openRawResource(resourceFile)
             val json = inputStream.bufferedReader().use { it.readText() }
 
             val gson = Gson()
             val driversShipments: DriversShipments  = gson.fromJson(json, DriversShipments::class.java)
-            var readObjectAsString = driversShipments.toString()
+            val readObjectAsString = driversShipments.toString()
             Log.d("Read JSON Data DriverShipments", readObjectAsString)
        // }
        return driversShipments
