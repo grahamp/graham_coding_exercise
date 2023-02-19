@@ -30,6 +30,9 @@ import com.grahampoor.ps.repository.ProcessedData
 import com.grahampoor.ps.repository.ProcessedRoutes
 import com.grahampoor.ps.repository.State
 import com.grahampoor.ps.veiwmodel.DriverRouteViewModel
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -46,7 +49,7 @@ class MainActivity : ComponentActivity() {
                         DriverScreen(driverRouteViewModel)
                     }
                     driverRouteViewModel.selectedDriver.observe(this) {
-                    setContent {
+                        setContent {
                             DriverScreen(driverRouteViewModel)
                         }
                     }
@@ -54,9 +57,13 @@ class MainActivity : ComponentActivity() {
             }
 
         }
+        processedRoutes.processStatus.observe(this) { value ->
+            println("Received value: $value")
+        }
         lifecycleScope.launch {
             processedRoutes.run()
         }
+
     }
 
     @OptIn(ExperimentalUnitApi::class)
@@ -99,7 +106,6 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
     @Composable
     fun DriverList(
         items: List<String>,
@@ -132,7 +138,7 @@ class MainActivity : ComponentActivity() {
         // This fits the spirit of the exercise but fails with these addresses with the state
         // val intentUriForRoute = Uri.parse("google.navigation:q=$address") // create the Uri with the address
 
-        val mapIntent = Intent( Intent.ACTION_VIEW, intentUriForMap)
+        val mapIntent = Intent(Intent.ACTION_VIEW, intentUriForMap)
         mapIntent.setPackage("com.google.android.apps.maps")
         if (mapIntent.resolveActivity(context.packageManager) != null) {
             context.startActivity(mapIntent)

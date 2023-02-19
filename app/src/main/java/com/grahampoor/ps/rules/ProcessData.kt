@@ -1,5 +1,8 @@
 package com.grahampoor.ps.rules
 
+import androidx.lifecycle.MutableLiveData
+import kotlinx.coroutines.flow.MutableSharedFlow
+
 
 /*
 
@@ -62,10 +65,18 @@ val consonantsSet = setOf(
     'r', 's', 't', 'v', 'x', 'y', 'z'
 )
 
-/* maxSSDriverRouteTable contains our result.
-Other values are for Unit testing sanity, to verify we tested all unique drivers to route
-sets.
-Could do some clever DI to remove from product.
+/**
+ * Max ss driver destination values
+ * maxSSDriverRouteTable contains our result.
+ * Other values are for Unit testing sanity, to verify we tested all
+ * unique drivers to route sets.
+ * Could do some clever DI to remove from product
+ *
+ * @property maxSSDriverRouteTable
+ * @property driverRouteToScoreLookUp
+ * @property iterationCount
+ * @property maxSS
+ * @constructor Create empty Max ss driver destination values
  */
 data class MaxSsDriverDestinationValues(
     val maxSSDriverRouteTable: MutableMap<String, String>,
@@ -73,8 +84,6 @@ data class MaxSsDriverDestinationValues(
     val iterationCount: Int,
     val maxSS: Float
 )
-
-
 
 /*
 Brute force answer,
@@ -112,25 +121,40 @@ computation
  be an advantage.
 4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
 This is how the Traveling Salesman problem is "solved" in practice.
-
 */
+data class ProcessProgressData(
+    val size: Int,
+    val combinationCount: Int,
+    val maxSS: Float
+)
+/**
+ * Max ss driver destination set
+ *
+ * We get all the combinations by matching driver at index i with shipment
+ * shippingIndex[i]   We progress through the combination in a way incremental
+ * way that creates a full valid candidate routing table at each iteration of the outer loop.
+ * This lets us test whether this is the Max SS route that we copy and save or not, in
+ * which case we do not have to store it
+ * An optimization this utilized is to store the calculated results for each of the n^2
+ * driver -> route calculation a use of "Memoization". We could also store the final result,
+ * maybe even storing it and tracking a change in original data set.
+ * But before making storage speed tradeoffs, or doing any work on optimization we have
+ * first identify the problem and confirm many questions I outlined in other comments.
 
-/*
- One optimization this fun utilizes is to store the calculated results for each of the n^2
- driver -> route calculation a use of "Memoization". We could also store the final result,
- maybe even storing it and tracking a change in original data set.
 
- But before making storage speed tradeoffs, or doing any work on optimization we have
- first identify the problem and confirm many questions I outlined in other comments.
+ * @param drivers
+ * @param shipments
+ * @return
  */
 fun maxSsDriverDestinationSet(
     drivers: Array<String>,
-    shipments: Array<String>
+    shipments: Array<String>,
+    processStatus: MutableLiveData<ProcessProgressData> = MutableLiveData()
 ): MaxSsDriverDestinationValues {
 
     val driverRouteToScoreLookUp: MutableMap<String, Float> =
         HashMap<String, Float>().toMutableMap()
-    var iterationCount = 0 // Sanity check. Did we do all combinations?
+    var combinationCount = 0// Sanity check. Did we do all combinations?
     var maxSS = 0f
     var currentSS: Float
     var ssSum = 0f
@@ -138,18 +162,7 @@ fun maxSsDriverDestinationSet(
         HashMap<String, String>().toMutableMap()
     val candidateRouteTable: MutableMap<String, String> =
         HashMap<String, String>().toMutableMap()
-    // for (shippingIndexOffset in shipments.indices) {
-    /*
- We get all the combinations by matching driver at index i with shipment
-shippingIndex[i]   We progress through the combination in a way incremental
- way that creates a full valid candidate routing table at each iteration of the outer loop.
- This lets us test whether this is the Max SS route that we copy and save or not, in
- which case we do not have to store it.
-*/
-//        Log.d(
-//            "ProcessData",
-//            " $shippingIndexOffset) shipments ${shipments[shippingIndexOffset]}  start"
-//        )
+
     val n = shipments.size
     val digits = (0 until n).toList()
     val stack = mutableListOf(mutableListOf<Int>())
@@ -173,7 +186,6 @@ shippingIndex[i]   We progress through the combination in a way incremental
             }
             ssSum = 0f
             candidateRouteTable.clear()
-            iterationCount++
             for (i in drivers.indices) {
                 val shipmentIndex: Int =
                     shipmentPermutedIndex[i] //(i + shippingIndexOffset) % drivers.size
@@ -189,6 +201,8 @@ shippingIndex[i]   We progress through the combination in a way incremental
                 driverRouteToScoreLookUp[key] = currentSS
                 ssSum += currentSS
             }
+            combinationCount+=1
+            processStatus.postValue(ProcessProgressData(n, combinationCount , ssSum))
 //        Log.d(
 //            "ProcessData",
 //            " $shippingIndexOffset) shipment ${shipments[shippingIndexOffset]} end \n start Score $ssSum "
@@ -198,13 +212,18 @@ shippingIndex[i]   We progress through the combination in a way incremental
     return MaxSsDriverDestinationValues(
         maxSSDriverRouteTable,
         driverRouteToScoreLookUp,
-        iterationCount,
+        combinationCount,
         maxSS
     )
 }
 
 
-/* Parsing  street names out in a simplistic and brittle way, not acceptable for production .
+/**
+ * Parse street name from address
+ *
+ * @param address
+ * @return
+ *//* Parsing  street names out in a simplistic and brittle way, not acceptable for production .
 Parsing arbitrary addresses reliably is beyond the scope of level of effort
 suggested for this exercise. Luckily the data set presented *seems* support simply taking the first
 two words of in each address. And thus avoiding the potholes of "Stravenue",*/
@@ -233,6 +252,13 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
 }
 
 
+/**
+ * Driver processed
+ *
+ * @constructor
+ *
+ * @param driverIn
+ */
 class DriverProcessed(driverIn: String) {
     private val driver = driverIn
     val vowels: Int = countOccurrences(driver, vowelsSet)
@@ -240,9 +266,15 @@ class DriverProcessed(driverIn: String) {
     val factors2: Set<Int> = findFactorsGreaterThanOne(driver.length)
 }
 
-/*
-Long explicit variable names throughout because the algorithm is so quirky and specific.
-Big O(sqrt(n)) where n is the letters in the street name
+/**
+ * Address processed
+ *  Long explicit variable names throughout because the algorithm is so quirky and specific.
+ *  Big O(sqrt(n)) where n is the letters in the street name
+ * @constructor
+ *
+ * @param streetNameIn
+ *//*
+L
 */
 class AddressProcessed(streetNameIn: String) {
     private val streetName = streetNameIn
@@ -250,6 +282,16 @@ class AddressProcessed(streetNameIn: String) {
     val factors2: Set<Int> = findFactorsGreaterThanOne(streetName.length)
 }
 
+/**
+ * Calc driver destination s s
+ *
+ * @param driverString
+ * @param addressString
+ * @param vowelFactor
+ * @param consonantFactor
+ * @param commonFactorsFactor
+ * @return
+ */
 fun calcDriverDestinationSS(
     driverString: String,
     addressString: String,
@@ -274,6 +316,12 @@ fun calcDriverDestinationSS(
     return ss
 }
 
+/**
+ * Find factors greater than one
+ *
+ * @param num
+ * @return
+ */
 fun findFactorsGreaterThanOne(num: Int): Set<Int> {
     val factors = mutableSetOf<Int>()
     for (i in 2 until num) {
@@ -284,6 +332,13 @@ fun findFactorsGreaterThanOne(num: Int): Set<Int> {
     return factors
 }
 
+/**
+ * Count occurrences
+ *
+ * @param str
+ * @param target
+ * @return
+ */
 fun countOccurrences(str: String, target: Set<Char>): Int {
     var count = 0
     for (char in str) {
