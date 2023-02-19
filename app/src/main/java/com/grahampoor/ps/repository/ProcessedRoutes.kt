@@ -65,7 +65,7 @@ class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
 
     private fun readDriverShipments(): Result<Any> {
         return try {
-            Result.success(readResourceFile(R.raw.trucks_drivers8))
+            Result.success(readResourceFile(R.raw.trucks_drivers))
         } catch (e: Exception) {
             Result.success(e)
         }

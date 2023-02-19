@@ -131,15 +131,21 @@ data class ProcessProgressData(
     val size: Int,
     val combinationCount: Int,
     val ssValue: Float,
-    val ssMax: Float
+    val ssMax: Float,
+    val ssIdeal: Float = 0f
 ) {
     override fun toString(): String {
         val p = factorial(size).toDouble()
-        return "Total drivers->routes sets\n"+
+        return "Total drivers->routes sets\n" +
                 "${"%.0f".format(p)} of $size \n" +
-                "${((combinationCount.toDouble()/p)*100).toInt()} % complete \n" +
-                "SSMax= $ssMax current= $ssValue"
+                "Cur= $ssValue\n" +
+                "SSMax= $ssMax\n" +
+                "Ideal SS= $ssIdeal\n" +
+                "${percent(ssIdeal.toDouble(), ssMax.toDouble())} % of Ideal \n" +
+                "${percent(combinationCount.toDouble(), p)} % complete \n"
     }
+
+    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
 }
 
 /**
@@ -173,6 +179,7 @@ fun maxSsDriverDestinationSet(
     var maxSS = 0f
     var currentSS: Float
     var ssSum = 0f
+    var idealSS = Float.MAX_VALUE
     var maxSSDriverRouteTable: MutableMap<String, String> =
         HashMap<String, String>().toMutableMap()
     val candidateRouteTable: MutableMap<String, String> =
@@ -182,8 +189,14 @@ fun maxSsDriverDestinationSet(
     val digits = (0 until n).toList()
     val stack = mutableListOf(mutableListOf<Int>())
 
-    // Generate all permutation of indexes this gets us all sets of n drivers to n shipments.
-    // But only generates the set of candidate driver routes each distinct driver to a distinct route.
+    // Generate all permutation of route sets length n using indexes 0 through n-1.
+    // Iterate through each set of permutations.
+    // For each of the unique set of size n of indexes on the routes.
+    // Iterate 0 through (n-1)
+    // Keep a driver list with the same ordered 1 - n for all n! permutation of shipment indexes.
+    // Use the permuted shipping indexes to produce a unique permutation of shipping addresses.
+    // This gets us all sets of combinations n drivers to n shipments.
+    // This only generates valid sets of candidate driver routes each distinct driver to a distinct route.
     while (stack.isNotEmpty()) {
         val current = stack.removeLast()
         if (current.size != n) {
@@ -216,12 +229,18 @@ fun maxSsDriverDestinationSet(
                 }
                 driverRouteToScoreLookUp[key] = currentSS
                 ssSum += currentSS
+                if (driverRouteToScoreLookUp.size == shipments.size * drivers.size) {
+                    driverRouteToScoreLookUp.values.sum()
+                }
             }
-            combinationCount+=1
-            processStatus.postValue(ProcessProgressData(n, combinationCount , ssSum, maxSS))
-
+            combinationCount += 1
+            if (0 == combinationCount % 1000)
+                processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
+            if (maxSS == idealSS)
+                break
         } // if new permutation available
     }// While permuting
+    processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
     return MaxSsDriverDestinationValues(
         maxSSDriverRouteTable,
         driverRouteToScoreLookUp,
@@ -361,6 +380,7 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
     }
     return count
 }
+
 fun factorial(n: Int): BigInteger {
     var result = BigInteger.ONE
     for (i in 2..n) {
