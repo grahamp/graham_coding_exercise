@@ -127,23 +127,7 @@ computation
 4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
 This is how the Traveling Salesman problem is "solved" in practice.
 */
-data class ProcessProgressData(
-    val size: Int,
-    val combinationCount: Int,
-    val ssValue: Float,
-    val ssMax: Float
-) {
-    override fun toString(): String {
-        val p = factorial(size).toDouble()
-        return "Total drivers->routes sets\n" +
-                "${"%.0f".format(p)} of $size \n" +
-                "Cur= $ssValue\n" +
-                "SSMax= $ssMax\n" +
-                "${percent(combinationCount.toDouble(), p)} % complete \n"
-    }
 
-    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
-}
 
 /**
  * Max ss driver destination set
@@ -173,6 +157,7 @@ data class ProcessProgressData(
  * @param shipments
  * @return
  */
+@Suppress("KDocUnresolvedReference")
 fun maxSsDriverDestinationSet(
     drivers: Array<String>,
     shipments: Array<String>,
@@ -194,8 +179,14 @@ fun maxSsDriverDestinationSet(
     val digits = (0 until n).toList()
     val stack = mutableListOf(mutableListOf<Int>())
 
-    // Generate all permutation of indexes this gets us all sets of n drivers to n shipments.
-    // But only generates the set of candidate driver routes each distinct driver to a distinct route.
+    // Generate all permutation of route sets length n using indexes 0 through n-1.
+    // Iterate through each set of permutations.
+    // For each of the unique set of size n of indexes on the routes.
+    // Iterate 0 through (n-1)
+    // Keep a driver list with the same ordered 1 - n for all n! permutation of shipment indexes.
+    // Use the permuted shipping indexes to produce a unique permutation of shipping addresses.
+    // This gets us all sets of combinations n drivers to n shipments.
+    // This only generates valid sets of candidate driver routes each distinct driver to a distinct route.
     while (stack.isNotEmpty()) {
         val current = stack.removeLast()
         if (current.size != n) {
@@ -230,10 +221,11 @@ fun maxSsDriverDestinationSet(
                 ssSum += currentSS
             }
             combinationCount += 1
-            processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
-
+            if (0 == combinationCount % 10000)
+                processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
         } // if new permutation available
     }// While permuting
+    processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS,true))
     return MaxSsDriverDestinationValues(
         maxSSDriverRouteTable,
         driverRouteToScoreLookUp,
@@ -276,7 +268,34 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
     }
 }
 
+/**
+ * Process progress data
+ *
+ * @property size
+ * @property combinationCount
+ * @property ssValue
+ * @property ssMax
+ * @property completed
+ * @constructor Create empty Process progress data
+ */
+data class ProcessProgressData(
+    val size: Int,
+    val combinationCount: Int,
+    val ssValue: Float,
+    val ssMax: Float,
+    val completed: Boolean = false
+) {
+    override fun toString(): String {
+        val p = factorial(size).toDouble()
+        return "Total drivers->routes sets\n" +
+                "${"%.0f".format(p)} of $size \n" +
+                "Cur= $ssValue\n" +
+                "SSMax= $ssMax\n" +
+                "${percent(combinationCount.toDouble(), p)} % complete \n"
+    }
 
+    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
+}
 /**
  * Driver processed
  *
