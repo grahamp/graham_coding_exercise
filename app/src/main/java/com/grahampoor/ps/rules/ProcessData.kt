@@ -131,7 +131,8 @@ data class ProcessProgressData(
     val size: Int,
     val combinationCount: Int,
     val ssValue: Float,
-    val ssMax: Float
+    val ssMax: Float,
+    val completed: Boolean = false
 ) {
     override fun toString(): String {
         val p = factorial(size).toDouble()
@@ -194,8 +195,14 @@ fun maxSsDriverDestinationSet(
     val digits = (0 until n).toList()
     val stack = mutableListOf(mutableListOf<Int>())
 
-    // Generate all permutation of indexes this gets us all sets of n drivers to n shipments.
-    // But only generates the set of candidate driver routes each distinct driver to a distinct route.
+    // Generate all permutation of route sets length n using indexes 0 through n-1.
+    // Iterate through each set of permutations.
+    // For each of the unique set of size n of indexes on the routes.
+    // Iterate 0 through (n-1)
+    // Keep a driver list with the same ordered 1 - n for all n! permutation of shipment indexes.
+    // Use the permuted shipping indexes to produce a unique permutation of shipping addresses.
+    // This gets us all sets of combinations n drivers to n shipments.
+    // This only generates valid sets of candidate driver routes each distinct driver to a distinct route.
     while (stack.isNotEmpty()) {
         val current = stack.removeLast()
         if (current.size != n) {
@@ -230,10 +237,11 @@ fun maxSsDriverDestinationSet(
                 ssSum += currentSS
             }
             combinationCount += 1
-            processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
-
+            if (0 == combinationCount % 1000)
+                processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
         } // if new permutation available
     }// While permuting
+    processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS,true))
     return MaxSsDriverDestinationValues(
         maxSSDriverRouteTable,
         driverRouteToScoreLookUp,

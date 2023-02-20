@@ -67,8 +67,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val result = processedRoutes.processedRouteData.value
             //ToDo Better check here But only need this for a demo to show
-            // updating progress of long computation
-            // Remove in production
+            // updating progress of long computation. Remove in production
             if ((result?.getOrThrow()?.stateInfo != State.DataAvailable) &&
                 (result?.getOrThrow()?.stateInfo != State.Processing)){
                 processedRoutes.run()
@@ -93,7 +92,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.fillMaxSize()) {
 
                 // Button
-                if ((selectedDriver != null) && (driverRouteViewModel.drivers.size > 0)) {
+                if (driverRouteViewModel.drivers.size > 0) {
                     Text(
                         text = selectedDriver.toString(),
                         modifier = Modifier.padding(16.dp),
@@ -110,7 +109,7 @@ class MainActivity : ComponentActivity() {
                         Text("Show Route")
                     }
                 } else {
-                    if (processProgressData != null) {
+                    if ((processProgressData != null) && !processProgressData.completed) {
                         Text(
                             text = processProgressData.toString(),
                             modifier = Modifier.padding(16.dp),
