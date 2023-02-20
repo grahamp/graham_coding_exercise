@@ -144,12 +144,11 @@ fun maxSsDriverDestinationSet(
     processStatus: MutableLiveData<ProcessProgressData> = MutableLiveData()
 ): MaxSsDriverDestinationValues {
 
-    val driverRouteToScoreLookUp: MutableMap<String, Float> =
-        HashMap<String, Float>().toMutableMap()
     var combinationCount = 0// Sanity check. Did we do all combinations?
-    var maxSS = 0f
-    var currentSS: Float
+    var ssMax: Float
+    var ssCurrent: Float
     var ssSum = 0f
+    val ssIdeal: Float
     var maxSSDriverRouteTable: MutableMap<String, String> =
         HashMap<String, String>().toMutableMap()
     val candidateRouteTable: MutableMap<String, String> =
@@ -158,6 +157,10 @@ fun maxSsDriverDestinationSet(
     val n = shipments.size
     val digits = (0 until n).toList()
     val stack = mutableListOf(mutableListOf<Int>())
+    val driverToSSTableIdealSS = findIdealSSAndDriverToSSTable(drivers,shipments,processStatus)
+    val driverRouteToScoreLookUp = driverToSSTableIdealSS.driverRouteToScoreLookUp
+    ssIdeal = driverToSSTableIdealSS.ssIdeal
+    ssMax = driverToSSTableIdealSS.maxSS
 
     // Generate all permutation of route sets length n using indexes 0 through n-1.
     // Iterate through each set of permutations.
@@ -179,41 +182,131 @@ fun maxSsDriverDestinationSet(
             }
         } else {
             val shipmentPermutedIndex = current.toTypedArray()
-            if (ssSum > maxSS) {
-                maxSS = ssSum
+            if (ssSum > ssMax) {
+                ssMax = ssSum
                 maxSSDriverRouteTable = candidateRouteTable.toMutableMap()
             }
             ssSum = 0f
             candidateRouteTable.clear()
             for (i in drivers.indices) {
                 val shipmentIndex: Int =
-                    shipmentPermutedIndex[i] //(i + shippingIndexOffset) % drivers.size
+                    shipmentPermutedIndex[i]
                 val driver = drivers[i]
                 val shipment = shipments[shipmentIndex]
                 val key = "$driver -> $shipment"
                 candidateRouteTable[driver] = shipment
-                currentSS = if (!driverRouteToScoreLookUp.containsKey(key)) {
-                    calcDriverDestinationSS(driver, shipment)
-                } else {
-                    driverRouteToScoreLookUp[key]!!
-                }
-                driverRouteToScoreLookUp[key] = currentSS
-                ssSum += currentSS
+                ssCurrent =  driverRouteToScoreLookUp[key]!!
+                driverRouteToScoreLookUp[key] = ssCurrent
+                ssSum += ssCurrent
             }
             combinationCount += 1
             if (0 == combinationCount % 10000)
-                processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
+                processStatus.postValue(
+                    ProcessProgressData(
+                        n,
+                        combinationCount,
+                        ssSum,
+                        ssMax,
+                        ssIdeal
+                    )
+                )
         } // if new permutation available
+        if (ssMax == ssIdeal)
+            break  //
     }// While permuting
-    processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS,true))
+    processStatus.postValue(
+        ProcessProgressData(
+            n, combinationCount, ssSum,
+            ssMax, ssIdeal = ssIdeal, completed = true
+        )
+    )
     return MaxSsDriverDestinationValues(
         maxSSDriverRouteTable,
         driverRouteToScoreLookUp,
         combinationCount,
-        maxSS
+        ssMax
     )
 }
+data class DriverToSSTableIdealSS(
+    val driverRouteToScoreLookUp: MutableMap<String, Float>,
+    val maxSS: Float,
+    val ssIdeal : Float
+)
+fun findIdealSSAndDriverToSSTable(
+    drivers: Array<String>,
+    shipments: Array<String>,
+    processStatus: MutableLiveData<ProcessProgressData> = MutableLiveData()
+): DriverToSSTableIdealSS {
 
+    val driverRouteToScoreLookUp: MutableMap<String, Float> =
+        HashMap<String, Float>().toMutableMap()
+    var combinationCount = 0// Sanity check. Did we do all combinations?
+    var ssMax = 0f
+    var ssCurrent: Float
+    var ssSum = 0f
+    var ssIdeal = Float.MAX_VALUE
+    val maxSSForEachDriver: MutableMap<String, Float> =
+        HashMap<String, Float>().toMutableMap()
+    val candidateRouteTable: MutableMap<String, String> =
+        HashMap<String, String>().toMutableMap()
+
+    val n = shipments.size
+    for (shippingIndexOffset in shipments.indices){
+            if (ssSum > ssMax) {
+                ssMax = ssSum
+            }
+            ssSum = 0f
+            candidateRouteTable.clear()
+            for (i in drivers.indices) {
+                val shipmentIndex: Int =(i + shippingIndexOffset) % drivers.size
+                val driver = drivers[i]
+                val shipment = shipments[shipmentIndex]
+                val key = "$driver -> $shipment"
+                candidateRouteTable[driver] = shipment
+                ssCurrent = if (driverRouteToScoreLookUp.containsKey(key)) {
+                    driverRouteToScoreLookUp[key]!!
+                } else {
+                    calcDriverDestinationSS(driver, shipment)
+                }
+                driverRouteToScoreLookUp[key] = ssCurrent
+                ssSum += ssCurrent
+                val ssMaxForDriver = maxSSForEachDriver[driver]
+                if (null == ssMaxForDriver)
+                    maxSSForEachDriver[driver] = ssCurrent
+                else {
+                    if (ssCurrent > ssMaxForDriver)
+                        maxSSForEachDriver[driver] = ssCurrent
+                }
+            }
+            if (driverRouteToScoreLookUp.size == drivers.size * shipments.size) {
+                ssIdeal = maxSSForEachDriver.values.sum()
+            }
+            combinationCount += 1
+            if (0 == combinationCount % 10000)
+                processStatus.postValue(
+                    ProcessProgressData(
+                        n,
+                        combinationCount,
+                        ssSum,
+                        ssMax,
+                        ssIdeal
+                    )
+                )
+        if (ssMax == ssIdeal)
+            break  //
+    }// While permuting
+    processStatus.postValue(
+        ProcessProgressData(
+            n, combinationCount, ssSum,
+            ssMax, ssIdeal = ssIdeal, completed = true
+        )
+    )
+    return DriverToSSTableIdealSS(
+        driverRouteToScoreLookUp,
+        ssMax,
+        ssIdeal
+    )
+}
 
 /**
  * Parse street name from address
@@ -263,6 +356,7 @@ data class ProcessProgressData(
     val combinationCount: Int,
     val ssValue: Float,
     val ssMax: Float,
+    val ssIdeal: Float = Float.MAX_VALUE,
     val completed: Boolean = false
 ) {
     override fun toString(): String {
@@ -271,6 +365,7 @@ data class ProcessProgressData(
                 "${"%.0f".format(p)} of $size \n" +
                 "Cur= $ssValue\n" +
                 "SSMax= $ssMax\n" +
+                "${percent(ssMax.toDouble(), ssIdeal.toDouble())} % of Ideal \n" +
                 "${percent(combinationCount.toDouble(), p)} % complete \n"
     }
 
