@@ -41,8 +41,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val processedRoutes = ProcessedRoutes()
-
+        // ToDo add DI and inject those objects whose lifecycles are not scoped to acctivity
+        val processedRoutes = RoutingApp.instance.processedRoutes
         processedRoutes.processedRouteData.observe(this) { routeResult ->
             setContent {
                 Graham_PSTheme {
@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
                     }
                     processedRoutes.processStatus.observe(this) {
                         setContent {
-                            DriverScreen(driverRouteViewModel,it)
+                            DriverScreen(driverRouteViewModel, it)
                         }
                     }
                 }
@@ -65,15 +65,23 @@ class MainActivity : ComponentActivity() {
 
         }
         lifecycleScope.launch {
-            processedRoutes.run()
+            val result = processedRoutes.processedRouteData.value
+            //ToDo Better check here But only need this for a demo to show
+            // updating progress of long computation
+            // Remove in production
+            if ((result?.getOrThrow()?.stateInfo != State.DataAvailable) &&
+                (result?.getOrThrow()?.stateInfo != State.Processing)){
+                processedRoutes.run()
+            }
         }
-
     }
 
     @OptIn(ExperimentalUnitApi::class)
     @Composable
-    fun DriverScreen(driverRouteViewModel: DriverRouteViewModel,
-                     processProgressData: ProcessProgressData? = null  ) {
+    fun DriverScreen(
+        driverRouteViewModel: DriverRouteViewModel,
+        processProgressData: ProcessProgressData? = null
+    ) {
         var selectedDriver by remember { mutableStateOf<String?>(null) }
         val context = LocalContext.current // get the activity context
 
@@ -85,7 +93,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.fillMaxSize()) {
 
                 // Button
-                if ((selectedDriver!=null) && (driverRouteViewModel.drivers.size>0)) {
+                if ((selectedDriver != null) && (driverRouteViewModel.drivers.size > 0)) {
                     Text(
                         text = selectedDriver.toString(),
                         modifier = Modifier.padding(16.dp),
