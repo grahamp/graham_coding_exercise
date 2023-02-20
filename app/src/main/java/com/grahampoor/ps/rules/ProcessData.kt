@@ -127,24 +127,7 @@ computation
 4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
 This is how the Traveling Salesman problem is "solved" in practice.
 */
-data class ProcessProgressData(
-    val size: Int,
-    val combinationCount: Int,
-    val ssValue: Float,
-    val ssMax: Float,
-    val completed: Boolean = false
-) {
-    override fun toString(): String {
-        val p = factorial(size).toDouble()
-        return "Total drivers->routes sets\n" +
-                "${"%.0f".format(p)} of $size \n" +
-                "Cur= $ssValue\n" +
-                "SSMax= $ssMax\n" +
-                "${percent(combinationCount.toDouble(), p)} % complete \n"
-    }
 
-    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
-}
 
 /**
  * Max ss driver destination set
@@ -174,6 +157,7 @@ data class ProcessProgressData(
  * @param shipments
  * @return
  */
+@Suppress("KDocUnresolvedReference")
 fun maxSsDriverDestinationSet(
     drivers: Array<String>,
     shipments: Array<String>,
@@ -237,7 +221,7 @@ fun maxSsDriverDestinationSet(
                 ssSum += currentSS
             }
             combinationCount += 1
-            if (0 == combinationCount % 1000)
+            if (0 == combinationCount % 10000)
                 processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
         } // if new permutation available
     }// While permuting
@@ -284,7 +268,34 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
     }
 }
 
+/**
+ * Process progress data
+ *
+ * @property size
+ * @property combinationCount
+ * @property ssValue
+ * @property ssMax
+ * @property completed
+ * @constructor Create empty Process progress data
+ */
+data class ProcessProgressData(
+    val size: Int,
+    val combinationCount: Int,
+    val ssValue: Float,
+    val ssMax: Float,
+    val completed: Boolean = false
+) {
+    override fun toString(): String {
+        val p = factorial(size).toDouble()
+        return "Total drivers->routes sets\n" +
+                "${"%.0f".format(p)} of $size \n" +
+                "Cur= $ssValue\n" +
+                "SSMax= $ssMax\n" +
+                "${percent(combinationCount.toDouble(), p)} % complete \n"
+    }
 
+    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
+}
 /**
  * Driver processed
  *
