@@ -6,6 +6,13 @@ import androidx.lifecycle.ViewModel
 import com.grahampoor.ps.repository.ProcessedData
 import com.grahampoor.ps.repository.State
 
+/**
+ * Driver route view model
+ *
+ * @constructor
+ *
+ * @param resultIn
+ */
 class DriverRouteViewModel(resultIn: Result<ProcessedData>) : ViewModel() {
     private val result = resultIn
     private val message = "No Route Available "
@@ -13,6 +20,12 @@ class DriverRouteViewModel(resultIn: Result<ProcessedData>) : ViewModel() {
 
     private val _selectedDriver = MutableLiveData<String>()
     val selectedDriver : LiveData<String> = _selectedDriver
+
+    /**
+     * Set driver
+     *
+     * @param userSelectedDriver
+     */
     fun setDriver(userSelectedDriver : String) {
         // Fetch user data from the repository and update the LiveData
         _selectedDriver.postValue(userSelectedDriver)

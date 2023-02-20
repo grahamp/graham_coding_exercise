@@ -67,10 +67,6 @@ val consonantsSet = setOf(
 
 /**
  * Max ss driver destination values
- * maxSSDriverRouteTable contains our result.
- * Other values are for Unit testing sanity, to verify we tested all
- * unique drivers to route sets.
- * Could do some clever DI to remove from product
  *
  * @property maxSSDriverRouteTable
  * @property driverRouteToScoreLookUp
@@ -132,29 +128,9 @@ This is how the Traveling Salesman problem is "solved" in practice.
 /**
  * Max ss driver destination set
  *
- * We get all the combinations by matching driver at index i with each permutation of indexes
- * permutedShippingIndex[i]   We progress through the combination of driver->routes in a way incremental
- * way that creates a full valid candidate routing table at each iteration of the outer loop.
- * This lets us test whether this is the Max SS route that we copy and save or not, in
- * which case we do not have to store it
- * An optimization this utilized is to store the calculated results for each of the n^2
- * driver -> route calculation a use of "Memoization". We could also store the final result,
- * maybe even storing it and tracking a change in original data set.
- *
- * Another potential optimization is to find the "ideal SS" this is the sum of maximum
- * ss route for each driver. This may not be any valid set (each driver to one distinct route)
- * that meets this ideal. But we can calculate that number after n^2 iterations and if
- * an SS for a set matches it we can stop. And it might be the case that practically speaking
- * this changes the problem from NP to P.
- *
- * But before making storage speed tradeoffs, or doing any work on optimization we have
- * first identify the problem and confirm many questions I outlined in other comments.
- *
- *
-
-
  * @param drivers
  * @param shipments
+ * @param processStatus
  * @return
  */
 @Suppress("KDocUnresolvedReference")
@@ -296,6 +272,7 @@ data class ProcessProgressData(
 
     private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
 }
+
 /**
  * Driver processed
  *
@@ -312,8 +289,7 @@ class DriverProcessed(driverIn: String) {
 
 /**
  * Address processed
- *  Long explicit variable names throughout because the algorithm is so quirky and specific.
- *  Big O(sqrt(n)) where n is the letters in the street name
+ *
  * @constructor
  *
  * @param streetNameIn
@@ -393,6 +369,12 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
     return count
 }
 
+/**
+ * Factorial
+ *
+ * @param n
+ * @return
+ */
 fun factorial(n: Int): BigInteger {
     var result = BigInteger.ONE
     for (i in 2..n) {

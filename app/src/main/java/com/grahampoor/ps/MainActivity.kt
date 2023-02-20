@@ -7,16 +7,15 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.ExperimentalUnitApi
@@ -31,6 +30,11 @@ import com.grahampoor.ps.ui.theme.Graham_PSTheme
 import com.grahampoor.ps.veiwmodel.DriverRouteViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * Main activity
+ *
+ * @constructor Create empty Main activity
+ */
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,6 +73,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Driver screen
+     *
+     * @param driverRouteViewModel
+     * @param processProgressData
+     */
     @OptIn(ExperimentalUnitApi::class)
     @Composable
     fun DriverScreen(
@@ -119,8 +129,9 @@ class MainActivity : ComponentActivity() {
                 )
                 DriverList(items = driverRouteViewModel.drivers,
                     onItemSelected = {
-                        selectedDriver = it
-                        driverRouteViewModel.setDriver(it)
+                        val listItem = driverRouteViewModel.drivers[it]
+                        selectedDriver = listItem
+                        driverRouteViewModel.setDriver(listItem)
                     })
 
 
@@ -128,33 +139,42 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
+    /**
+     * Driver list
+     *
+     * @param items
+     * @param onItemSelected
+     * @receiver
+     */
+    @OptIn(ExperimentalMaterialApi::class)
     @Composable
-    fun DriverList(
-        items: List<String>,
-        onItemSelected: (String) -> Unit,
-    ) {
+    fun DriverList(items: List<String>, onItemSelected: (Int) -> Unit) {
+        val selectedItemIndex = remember { mutableStateOf(-1) }
 
-        Column(Modifier.wrapContentSize()) {
-            LazyColumn(
-                Modifier.weight(0.5f),
-                contentPadding = PaddingValues(16.dp)
-            ) {
-
-                items(items) { item ->
-                    Text(
-                        text = item,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onItemSelected(item) }
-                            .padding(16.dp)
-                    )
-                }
+        LazyColumn {
+            itemsIndexed(items) { index, item ->
+                ListItem(
+                    text = { Text(item) },
+                    modifier = Modifier
+                        .clickable {
+                            selectedItemIndex.value = index
+                            onItemSelected(index)
+                        }
+                        .background(
+                            if (selectedItemIndex.value == index) Color.Gray else Color.Transparent
+                        )
+                )
             }
         }
-
     }
 
+
+    /**
+     * Open maps route to address
+     *
+     * @param context
+     * @param address
+     */
     private fun openMapsRouteToAddress(context: Context, address: String) {
         // Finds some street with the right address and number
         val intentUriForMap = Uri.parse("geo:0,0?q=$address")
@@ -171,6 +191,10 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    /**
+     * Default preview
+     *
+     */
     @Preview(showBackground = true)
     @Composable
     fun DefaultPreview() {
@@ -182,9 +206,10 @@ class MainActivity : ComponentActivity() {
         testMap["f"] = "5"
 
         val drm = DriverRouteViewModel(Result.success(ProcessedData(testMap, State.DataAvailable)))
-
         Graham_PSTheme {
             DriverScreen(drm)
+            drm.setDriver("b")
         }
+
     }
 }

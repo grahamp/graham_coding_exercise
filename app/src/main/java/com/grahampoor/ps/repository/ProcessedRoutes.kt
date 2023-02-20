@@ -8,12 +8,21 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+/**
+ * Processed routes
+ *
+ * @constructor Create empty Processed routes
+ */
 class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
     val processedRouteData = MutableLiveData<Result<ProcessedData>>()
     private val processedDataError = Result.success(ProcessedData(HashMap(), State.Error))
     val processStatus = MutableLiveData<ProcessProgressData>()
 
-     fun run()  {
+    /**
+     * Run
+     *
+     */
+    fun run()  {
         val scope = CoroutineScope(Dispatchers.Default)
         // Launch a coroutine to run the function on a background thread
         scope.launch {
@@ -61,6 +70,11 @@ class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
     }
 
 
+    /**
+     * Read driver shipments
+     *
+     * @return
+     */
     private fun readDriverShipments(): Result<Any> {
         return try {
             Result.success(readResourceFile(R.raw.trucks_drivers))
@@ -69,6 +83,11 @@ class ProcessedRoutes : IProcessedRoutes { // end processDataByRules
         }
     }
 
+    /**
+     * Get data
+     *
+     * @return
+     */
     override fun getData(): MutableLiveData<Result<ProcessedData>> {
         return processedRouteData
     }
