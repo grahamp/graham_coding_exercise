@@ -7,42 +7,40 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.ui.Modifier
-import com.grahampoor.ps.ui.theme.Graham_PSTheme
-
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.grahampoor.ps.repository.ProcessedData
-import com.grahampoor.ps.repository.ProcessedRoutes
 import com.grahampoor.ps.repository.State
 import com.grahampoor.ps.rules.ProcessProgressData
+import com.grahampoor.ps.ui.theme.Graham_PSTheme
 import com.grahampoor.ps.veiwmodel.DriverRouteViewModel
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
+/**
+ * Main activity
+ *
+ * @constructor Create empty Main activity
+ */
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val processedRoutes = ProcessedRoutes()
-
+        // ToDo add DI and inject those objects whose lifecycles are not scoped to acctivity
+        val processedRoutes = RoutingApp.instance.processedRoutes
         processedRoutes.processedRouteData.observe(this) { routeResult ->
             setContent {
                 Graham_PSTheme {
@@ -57,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     }
                     processedRoutes.processStatus.observe(this) {
                         setContent {
-                            DriverScreen(driverRouteViewModel,it)
+                            DriverScreen(driverRouteViewModel, it)
                         }
                     }
                 }
@@ -65,15 +63,28 @@ class MainActivity : ComponentActivity() {
 
         }
         lifecycleScope.launch {
-            processedRoutes.run()
+            val result = processedRoutes.processedRouteData.value
+            //ToDo Better check here But only need this for a demo to show
+            // updating progress of long computation. Remove in production
+            if ((result?.getOrThrow()?.stateInfo != State.DataAvailable) &&
+                (result?.getOrThrow()?.stateInfo != State.Processing)){
+                processedRoutes.run()
+            }
         }
-
     }
 
+    /**
+     * Driver screen
+     *
+     * @param driverRouteViewModel
+     * @param processProgressData
+     */
     @OptIn(ExperimentalUnitApi::class)
     @Composable
-    fun DriverScreen(driverRouteViewModel: DriverRouteViewModel,
-                     processProgressData: ProcessProgressData? = null  ) {
+    fun DriverScreen(
+        driverRouteViewModel: DriverRouteViewModel,
+        processProgressData: ProcessProgressData? = null
+    ) {
         var selectedDriver by remember { mutableStateOf<String?>(null) }
         val context = LocalContext.current // get the activity context
 
@@ -85,9 +96,9 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.fillMaxSize()) {
 
                 // Button
-                if ((selectedDriver!=null) && (driverRouteViewModel.drivers.size>0)) {
+                if (driverRouteViewModel.drivers.size > 0) {
                     Text(
-                        text = selectedDriver.toString(),
+                        text = driverRouteViewModel.selectedDriver.value ?: "Select Driver",
                         modifier = Modifier.padding(16.dp),
                         fontSize = TextUnit(28f, TextUnitType.Sp)
                     )
@@ -102,7 +113,7 @@ class MainActivity : ComponentActivity() {
                         Text("Show Route")
                     }
                 } else {
-                    if (processProgressData != null) {
+                    if ((processProgressData != null) && !processProgressData.completed) {
                         Text(
                             text = processProgressData.toString(),
                             modifier = Modifier.padding(16.dp),
@@ -118,8 +129,9 @@ class MainActivity : ComponentActivity() {
                 )
                 DriverList(items = driverRouteViewModel.drivers,
                     onItemSelected = {
-                        selectedDriver = it
-                        driverRouteViewModel.setDriver(it)
+                        val listItem = driverRouteViewModel.drivers[it]
+                        selectedDriver = listItem
+                        driverRouteViewModel.setDriver(listItem)
                     })
 
 
@@ -127,33 +139,42 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
+    /**
+     * Driver list
+     *
+     * @param items
+     * @param onItemSelected
+     * @receiver
+     */
+    @OptIn(ExperimentalMaterialApi::class)
     @Composable
-    fun DriverList(
-        items: List<String>,
-        onItemSelected: (String) -> Unit,
-    ) {
+    fun DriverList(items: List<String>, onItemSelected: (Int) -> Unit) {
+        val selectedItemIndex = remember { mutableStateOf(-1) }
 
-        Column(Modifier.wrapContentSize()) {
-            LazyColumn(
-                Modifier.weight(0.5f),
-                contentPadding = PaddingValues(16.dp)
-            ) {
-
-                items(items) { item ->
-                    Text(
-                        text = item,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onItemSelected(item) }
-                            .padding(16.dp)
-                    )
-                }
+        LazyColumn {
+            itemsIndexed(items) { index, item ->
+                ListItem(
+                    text = { Text(item) },
+                    modifier = Modifier
+                        .clickable {
+                            selectedItemIndex.value = index
+                            onItemSelected(index)
+                        }
+                        .background(
+                            if (selectedItemIndex.value == index) Color.Gray else Color.Transparent
+                        )
+                )
             }
         }
-
     }
 
+
+    /**
+     * Open maps route to address
+     *
+     * @param context
+     * @param address
+     */
     private fun openMapsRouteToAddress(context: Context, address: String) {
         // Finds some street with the right address and number
         val intentUriForMap = Uri.parse("geo:0,0?q=$address")
@@ -170,6 +191,10 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    /**
+     * Default preview
+     *
+     */
     @Preview(showBackground = true)
     @Composable
     fun DefaultPreview() {
@@ -181,9 +206,10 @@ class MainActivity : ComponentActivity() {
         testMap["f"] = "5"
 
         val drm = DriverRouteViewModel(Result.success(ProcessedData(testMap, State.DataAvailable)))
-
         Graham_PSTheme {
             DriverScreen(drm)
+            drm.setDriver("b")
         }
+
     }
 }

@@ -127,46 +127,17 @@ computation
 4) Do we need the optimal solution?  What if we can guarantee the solution is 99.5% optimal.
 This is how the Traveling Salesman problem is "solved" in practice.
 */
-data class ProcessProgressData(
-    val size: Int,
-    val combinationCount: Int,
-    val ssValue: Float,
-    val ssMax: Float,
-    val ssIdeal: Float = 0f
-) {
-    override fun toString(): String {
-        val p = factorial(size).toDouble()
-        return "Total drivers->routes sets\n" +
-                "${"%.0f".format(p)} of $size \n" +
-                "Cur= $ssValue\n" +
-                "SSMax= $ssMax\n" +
-                "Ideal SS= $ssIdeal\n" +
-                "${percent(ssIdeal.toDouble(), ssMax.toDouble())} % of Ideal \n" +
-                "${percent(combinationCount.toDouble(), p)} % complete \n"
-    }
 
-    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
-}
 
 /**
  * Max ss driver destination set
  *
- * We get all the combinations by matching driver at index i with shipment
- * shippingIndex[i]   We progress through the combination in a way incremental
- * way that creates a full valid candidate routing table at each iteration of the outer loop.
- * This lets us test whether this is the Max SS route that we copy and save or not, in
- * which case we do not have to store it
- * An optimization this utilized is to store the calculated results for each of the n^2
- * driver -> route calculation a use of "Memoization". We could also store the final result,
- * maybe even storing it and tracking a change in original data set.
- * But before making storage speed tradeoffs, or doing any work on optimization we have
- * first identify the problem and confirm many questions I outlined in other comments.
-
-
  * @param drivers
  * @param shipments
+ * @param processStatus
  * @return
  */
+@Suppress("KDocUnresolvedReference")
 fun maxSsDriverDestinationSet(
     drivers: Array<String>,
     shipments: Array<String>,
@@ -179,7 +150,6 @@ fun maxSsDriverDestinationSet(
     var maxSS = 0f
     var currentSS: Float
     var ssSum = 0f
-    var idealSS = Float.MAX_VALUE
     var maxSSDriverRouteTable: MutableMap<String, String> =
         HashMap<String, String>().toMutableMap()
     val candidateRouteTable: MutableMap<String, String> =
@@ -229,18 +199,13 @@ fun maxSsDriverDestinationSet(
                 }
                 driverRouteToScoreLookUp[key] = currentSS
                 ssSum += currentSS
-                if (driverRouteToScoreLookUp.size == shipments.size * drivers.size) {
-                    driverRouteToScoreLookUp.values.sum()
-                }
             }
             combinationCount += 1
-            if (0 == combinationCount % 1000)
+            if (0 == combinationCount % 10000)
                 processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
-            if (maxSS == idealSS)
-                break
         } // if new permutation available
     }// While permuting
-    processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS))
+    processStatus.postValue(ProcessProgressData(n, combinationCount, ssSum, maxSS,true))
     return MaxSsDriverDestinationValues(
         maxSSDriverRouteTable,
         driverRouteToScoreLookUp,
@@ -283,6 +248,34 @@ fun parseStreetNameFromAddress(address: String): Result<String> {
     }
 }
 
+/**
+ * Process progress data
+ *
+ * @property size
+ * @property combinationCount
+ * @property ssValue
+ * @property ssMax
+ * @property completed
+ * @constructor Create empty Process progress data
+ */
+data class ProcessProgressData(
+    val size: Int,
+    val combinationCount: Int,
+    val ssValue: Float,
+    val ssMax: Float,
+    val completed: Boolean = false
+) {
+    override fun toString(): String {
+        val p = factorial(size).toDouble()
+        return "Total drivers->routes sets\n" +
+                "${"%.0f".format(p)} of $size \n" +
+                "Cur= $ssValue\n" +
+                "SSMax= $ssMax\n" +
+                "${percent(combinationCount.toDouble(), p)} % complete \n"
+    }
+
+    private fun percent(a: Double, b: Double) = "${"%.0f".format((a / b) * 100).toInt()}"
+}
 
 /**
  * Driver processed
@@ -300,8 +293,7 @@ class DriverProcessed(driverIn: String) {
 
 /**
  * Address processed
- *  Long explicit variable names throughout because the algorithm is so quirky and specific.
- *  Big O(sqrt(n)) where n is the letters in the street name
+ *
  * @constructor
  *
  * @param streetNameIn
@@ -381,6 +373,12 @@ fun countOccurrences(str: String, target: Set<Char>): Int {
     return count
 }
 
+/**
+ * Factorial
+ *
+ * @param n
+ * @return
+ */
 fun factorial(n: Int): BigInteger {
     var result = BigInteger.ONE
     for (i in 2..n) {
