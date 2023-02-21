@@ -42,66 +42,65 @@ class ProcessDataKtTest {
 
     @Test
     fun maxSsDriverDestinationSetTest() {
-       val size = 5
-            val optimalRoutes = maxSsDriverDestinationSet(
-                drivers = drivers.subList(0, size).toTypedArray(),
-                shipments = shipments.subList(0, size).toTypedArray(),
-            )
+        val size = 5
+        val optimalRoutes = maxSsDriverDestinationSet(
+            drivers = drivers.subList(0, size).toTypedArray(),
+            shipments = shipments.subList(0, size).toTypedArray(),
+        )
 
-            assertEquals(size * size, optimalRoutes.driverRouteToScoreLookUp.size)
-      //  }
-    }
-
-    @Test
-    fun getVowelsSet() {
+        assertEquals(size * size, optimalRoutes.driverRouteToScoreLookUp.size)
+        //  }
     }
 
     @Test
     fun computeAndStoreCalculationForRouteTest() {
         val r = ResultsForRouteVar()
-        computeAndStoreCalculationForRoute(r,"aaabbbbb","1234 even eve")
+        computeAndStoreCalculationForRoute(r, "aaabbbbb", "1234 even eve")
         // 3 vowels * 1.5 yes common
-        assertEquals(3f*1.5f*1.5f,r.ssCurrent)
-        computeAndStoreCalculationForRoute(r,"aaabbbbb","1234 odd odd")
+        assertEquals(3f * 1.5f * 1.5f, r.ssCurrent)
+        computeAndStoreCalculationForRoute(r, "aaabbbbb", "1234 odd odd")
         // 5 consonants * 1 no common
-        assertEquals(5f*1f,r.ssCurrent)
+        assertEquals(5f * 1f, r.ssCurrent)
 
     }
+
     @Test
     fun calcDriverDestinationSSTest() {
-        var ss =calcDriverDestinationSS("aaabbbb","123 even eve")
+        var ss = calcDriverDestinationSS("aaabbbb", "123 even eve")
         // 3 vowels * 1.5 no common
-        assertEquals(3f*1.5f,ss)
-        ss =calcDriverDestinationSS("aaabbbb","123 odd odd")
+        assertEquals(3f * 1.5f, ss)
+        ss = calcDriverDestinationSS("aaabbbb", "123 odd odd")
         // 4 consonants * 1 yes common
-        assertEquals(4f,ss)
-        ss =calcDriverDestinationSS("aaa bbbb","123 even eve")
+        assertEquals(4f, ss)
+        ss = calcDriverDestinationSS("aaa bbbb", "123 even eve")
         // 3 vowels * yes common
-        assertEquals(3f*1.5f*1.5f,ss)
+        assertEquals(3f * 1.5f * 1.5f, ss)
 
 
     }
+
     @Test
     fun addressProcessedTest() {
-        var ap =AddressProcessed("even eve")
+        var ap = AddressProcessed("even eve")
         // Even, common factor
-        assertTrue("Even/Odd wrong",ap.evenStreetName)
-        assertEquals("Street not parsed","even eve",ap.streetName)
-        assertEquals("Factors over 1",setOf(2,4),ap.factors2)
-        ap =AddressProcessed("odd odd")
+        assertTrue("Even/Odd wrong", ap.evenStreetName)
+        assertEquals("Street not parsed", "even eve", ap.streetName)
+        assertEquals("Factors over 1", setOf(2, 4), ap.factors2)
+        ap = AddressProcessed("odd odd")
         // Odd, no common
-        assertFalse("Even/Odd wrong",ap.evenStreetName)
-        assertEquals("Street not parsed","odd odd",ap.streetName)
-        assertEquals("Factors over 1",0,ap.factors2.size)
+        assertFalse("Even/Odd wrong", ap.evenStreetName)
+        assertEquals("Street not parsed", "odd odd", ap.streetName)
+        assertEquals("Factors over 1", 0, ap.factors2.size)
 
     }
+
     @Test
     fun driverProcessedTest() {
-        val dp =DriverProcessed("aaa bbbb")
+        val dp = DriverProcessed("aaa bbbb")
         // Even, common factor
-        assertEquals("vowel count wrong",3, dp.vowels)
-        assertEquals("const count wrong",4,dp.consonant)
-        assertEquals("Factors over 1",setOf(2,4),dp.factors2)
+        assertEquals("vowel count wrong", 3, dp.vowels)
+        assertEquals("const count wrong", 4, dp.consonant)
+        assertEquals("Factors over 1", setOf(2, 4), dp.factors2)
     }
 
 
