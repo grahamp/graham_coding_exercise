@@ -1,0 +1,24 @@
+{
+  "shipments": [
+    "1 a even x",
+    "2 b odd x",
+    "3 c odd x",
+    "4 d even x",
+    "5 e even x",
+    "6 a even x",
+    "7 b odd x",
+    "8 c odd x",
+    "9 d even x"
+  ],
+  "drivers": [
+    "1 d even x",
+    "2 d odd x",
+    "3 d odd x",
+    "4 d even x",
+    "5 d even x",
+    "6 d even x",
+    "7 d odd x",
+    "8 d odd x",
+    "9 d even x"
+  ]
+}
