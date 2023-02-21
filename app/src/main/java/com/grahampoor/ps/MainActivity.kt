@@ -39,8 +39,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // ToDo add DI and inject those objects whose lifecycles are not scoped to acctivity
+        // ToDo add DI and inject those objects whose lifecycles are not scoped to activity
         val processedRoutes = RoutingApp.instance.processedRoutes
+        // ToDo review if the following is consistent with Compose best practices.
+        //  Is it the correct and efficient way to update data?
         processedRoutes.processedRouteData.observe(this) { routeResult ->
             setContent {
                 Graham_PSTheme {
@@ -94,9 +96,8 @@ class MainActivity : ComponentActivity() {
             color = MaterialTheme.colors.background
         ) {
             Column(Modifier.fillMaxSize()) {
-
                 // Button
-                if (driverRouteViewModel.drivers.size > 0) {
+                if ((selectedDriver != null) && (driverRouteViewModel.drivers.size > 0)) {
                     Text(
                         text = driverRouteViewModel.selectedDriver.value ?: "Select Driver",
                         modifier = Modifier.padding(16.dp),
@@ -113,7 +114,7 @@ class MainActivity : ComponentActivity() {
                         Text("Show Route")
                     }
                 } else {
-                    if ((processProgressData != null) && !processProgressData.completed) {
+                    if (processProgressData != null) {
                         Text(
                             text = processProgressData.toString(),
                             modifier = Modifier.padding(16.dp),
@@ -121,7 +122,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
-
                 Text(
                     text = driverRouteViewModel.currentRoute,
                     modifier = Modifier.padding(16.dp),
