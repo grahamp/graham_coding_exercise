@@ -287,6 +287,9 @@ fun findIdealSSAndDriverToSSTable(
         }// For each driver with an offset shipping index
 
     } // For each shipping address, generate an offset modulo lastIndex of {driverIndex+0, driverIndex+1, driverIndex+2...driverIndex+(n-1)}
+    if (driverRouteToScoreLookUp.size == drivers.size * shipments.size) {
+        r.ssIdeal = maxSSForEachDriver.values.sum()
+    }
     processStatus.postValue(
         ProcessProgressData(
             n, combinationCount, r.ssSum,
