@@ -33,5 +33,9 @@ analyse and look at the code and application structure:
 3) Wait for Android Studio to finish syncing the project with Gradle.
 
 
+You can run test from the commandline too:
+./gradlew test
 
+The following will show other options
+./gradlew
 
