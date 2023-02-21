@@ -1,8 +1,5 @@
 package com.grahampoor.ps.rules
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.onEach
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -45,82 +42,68 @@ class ProcessDataKtTest {
 
     @Test
     fun maxSsDriverDestinationSetTest() {
-        val scope = CoroutineScope(Dispatchers.Default)
-        val mutableProgressData = MutableSharedFlow<ProcessProgressData>()
-
-        scope.launch {
-
-            mutableProgressData.collect() { value ->
-                println("Received value: $value")
-            }
-
+       val size = 5
             val optimalRoutes = maxSsDriverDestinationSet(
-                drivers = drivers.subList(0, 10).toTypedArray(),
-                shipments = shipments.subList(0, 10).toTypedArray(), mutableProgressData
+                drivers = drivers.subList(0, size).toTypedArray(),
+                shipments = shipments.subList(0, size).toTypedArray(),
             )
 
-            assertEquals(drivers.size * shipments.size, optimalRoutes.driverRouteToScoreLookUp.size)
-        }
+            assertEquals(size * size, optimalRoutes.driverRouteToScoreLookUp.size)
+      //  }
     }
-
 
     @Test
     fun getVowelsSet() {
     }
 
-    fun permuteRecur(
-        input: List<Int>,
-        used: List<Boolean>,
-        output: MutableList<Int>
-    ) {
-        if (output.size == input.size) {
-            println(output.joinToString(""))
-            return
-        }
-        for (i in input.indices) {
-            if (!used[i]) {
-                output.add(input[i])
-                val newUsed = used.toMutableList()
-                newUsed[i] = true
-                permuteRecur(input, newUsed, output)
-                output.removeLast()
-            }
-        }
-    }
-
-    fun generatePermutations(n: Int): List<String> {
-        val digits = (0..n).toList()
-        val permutations = mutableListOf<String>()
-        val stack = mutableListOf(mutableListOf<Int>())
-        while (stack.isNotEmpty()) {
-            val current = stack.removeLast()
-            if (current.size == n) {
-                permutations.add(current.joinToString(""))
-            } else {
-                for (digit in digits) {
-                    if (!current.contains(digit)) {
-                        val newCurrent = current.toMutableList()
-                        newCurrent.add(digit)
-                        stack.add(newCurrent)
-                    }
-                }
-            }
-        }
-        return permutations
-    }
-
     @Test
-    fun permuteRecurTest() {
-        val input = (0..8).toList()
-        val used = List(input.size) { false }
-        val output = mutableListOf<Int>()
-        permuteRecur(input, used, output)
+    fun computeAndStoreCalculationForRouteTest() {
+        val r = ResultsForRouteVar()
+        computeAndStoreCalculationForRoute(r,"aaabbbbb","1234 even eve")
+        // 3 vowels * 1.5 yes common
+        assertEquals(3f*1.5f*1.5f,r.ssCurrent)
+        computeAndStoreCalculationForRoute(r,"aaabbbbb","1234 odd odd")
+        // 5 consonants * 1 no common
+        assertEquals(5f*1f,r.ssCurrent)
+
+    }
+    @Test
+    fun calcDriverDestinationSSTest() {
+        var ss =calcDriverDestinationSS("aaabbbb","123 even eve")
+        // 3 vowels * 1.5 no common
+        assertEquals(3f*1.5f,ss)
+        ss =calcDriverDestinationSS("aaabbbb","123 odd odd")
+        // 4 consonants * 1 yes common
+        assertEquals(4f,ss)
+        ss =calcDriverDestinationSS("aaa bbbb","123 even eve")
+        // 3 vowels * yes common
+        assertEquals(3f*1.5f*1.5f,ss)
+
+
+    }
+    @Test
+    fun addressProcessedTest() {
+        var ap =AddressProcessed("even eve")
+        // Even, common factor
+        assertTrue("Even/Odd wrong",ap.evenStreetName)
+        assertEquals("Street not parsed","even eve",ap.streetName)
+        assertEquals("Factors over 1",setOf(2,4),ap.factors2)
+        ap =AddressProcessed("odd odd")
+        // Odd, no common
+        assertFalse("Even/Odd wrong",ap.evenStreetName)
+        assertEquals("Street not parsed","odd odd",ap.streetName)
+        assertEquals("Factors over 1",0,ap.factors2.size)
+
+    }
+    @Test
+    fun driverProcessedTest() {
+        val dp =DriverProcessed("aaa bbbb")
+        // Even, common factor
+        assertEquals("vowel count wrong",3, dp.vowels)
+        assertEquals("const count wrong",4,dp.consonant)
+        assertEquals("Factors over 1",setOf(2,4),dp.factors2)
     }
 
-    @Test
-    fun permuteIterTest() {
-        generatePermutations(8)
-    }
 
     @Test
     fun parseStreetNameFromAddress() {
