@@ -76,14 +76,15 @@ val consonantsSet = setOf(
  * @property maxSSDriverRouteTable
  * @property driverRouteToScoreLookUp
  * @property iterationCount
- * @property maxSS
+ * @property ssMax
  * @constructor Create empty Max ss driver destination values
  */
 data class MaxSsDriverDestinationValues(
     val maxSSDriverRouteTable: MutableMap<String, String>,
     val driverRouteToScoreLookUp: MutableMap<String, Float>,
     val iterationCount: Long,
-    val maxSS: Float
+    val ssMax: Float,
+    val ideal: Float = Float.MAX_VALUE
 )
 
 /*
@@ -229,7 +230,8 @@ fun maxSsDriverDestinationSet(
         maxSSDriverRouteTable,
         driverRouteToScoreLookUp,
         combinationCount,
-        ssMax
+        ssMax,
+        ssIdeal
     )
 }
 
