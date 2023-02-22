@@ -33,6 +33,32 @@ class ProcessDataKtTest {
         "0 d even x"
     )
 
+    val shipmentsIdealx = arrayListOf<String>(
+        "1 a ev x",
+        "2 b odd x",
+        "3 c odd x",
+        "4 d even x",
+        "5 e even x",
+        "6 a even x",
+        "7 b odd x",
+        "8 c odd x",
+        "9 d even x",
+        "0 d even x"
+    )
+    val driversIdealx = arrayListOf<String>(
+
+        "1 daaaa even x",
+        "2 d odd x",
+        "3 dccc odd x",
+        "4 d even x",
+        "5 d even x",
+        "6 deeee even x",
+        "7 dxxx odd x",
+        "8 dx odd x",
+        "9 daaa even x",
+        "0 daaaa even x"
+    )
+
     val drivers = arrayListOf<String>(
         "Noemie Murphy",
         "Cleve Durgan",
@@ -97,7 +123,26 @@ class ProcessDataKtTest {
             optimalRoutes.driverRouteToScoreLookUp.size
         )
         assertEquals("ssIdeal vs ssMax wrong", optimalRoutes.ssMax, optimalRoutes.ideal)
-        assertEquals("Actual iterations not predicted", optimalRoutes.iterationCount, 0)
+        assertEquals("Actual iterations not predicted", optimalRoutes.iterationCount, )
+    }
+    @Test
+    fun maxSsNotIdealDriverDestinationSetTest() {
+        val size: Int = 10
+        val permutations : Long   = factorial(size).toLong()
+        val optimalRoutes = maxSsDriverDestinationSet(
+            drivers = driversIdealx.subList(0, size).toTypedArray(),
+            shipments = shipmentsIdealx.subList(0, size).toTypedArray(),
+        )
+         println("${optimalRoutes.ideal} vs ${optimalRoutes.ssMax} count ${optimalRoutes.iterationCount}")
+
+        assertEquals(
+            "Lookup table size wrong",
+            size * size,
+            optimalRoutes.driverRouteToScoreLookUp.size
+        )
+        assertEquals("Actual iterations not predicted", 0,optimalRoutes.iterationCount)
+
+        assertEquals("ssIdeal vs ssMax wrong", optimalRoutes.ssMax, optimalRoutes.ideal)
     }
 
         @Test
