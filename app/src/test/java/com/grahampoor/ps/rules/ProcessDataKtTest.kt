@@ -50,8 +50,8 @@ class ProcessDataKtTest {
         "1 daaaa even x",
         "2 d odd x",
         "3 dccc odd x",
-        "4 d even x",
-        "5 d even x",
+        "4 dvvv even x",
+        "5 daaa even x",
         "6 deeee even x",
         "7 dxxx odd x",
         "8 dx odd x",
@@ -111,7 +111,6 @@ class ProcessDataKtTest {
     @Test
     fun maxSsIdealDriverDestinationSetTest() {
         val size: Int = 10
-        val permutations : Long   = factorial(size).toLong()
         val optimalRoutes = maxSsDriverDestinationSet(
             drivers = driversIdeal.subList(0, size).toTypedArray(),
             shipments = shipmentsIdeal.subList(0, size).toTypedArray(),
@@ -123,7 +122,7 @@ class ProcessDataKtTest {
             optimalRoutes.driverRouteToScoreLookUp.size
         )
         assertEquals("ssIdeal vs ssMax wrong", optimalRoutes.ssMax, optimalRoutes.ideal)
-        assertEquals("Actual iterations not predicted", optimalRoutes.iterationCount, )
+        assertEquals("Actual iterations not predicted", 0,optimalRoutes.iterationCount )
     }
     @Test
     fun maxSsNotIdealDriverDestinationSetTest() {
@@ -140,9 +139,10 @@ class ProcessDataKtTest {
             size * size,
             optimalRoutes.driverRouteToScoreLookUp.size
         )
-        assertEquals("Actual iterations not predicted", 0,optimalRoutes.iterationCount)
 
-        assertEquals("ssIdeal vs ssMax wrong", optimalRoutes.ssMax, optimalRoutes.ideal)
+        assertNotEquals("ssIdeal vs ssMax wrong", optimalRoutes.ssMax, optimalRoutes.ideal)
+        assertEquals("Actual iterations not predicted", permutations,optimalRoutes.iterationCount)
+
     }
 
         @Test
